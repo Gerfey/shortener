@@ -24,11 +24,11 @@ func (e *Endpoint) ShortenUrlHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := e.g.RandomString(8)
 
-	shortURL := fmt.Sprintf("http://%s/%s", r.Host, id)
+	shortUrl := getCorrectUrl(r) + id
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortURL))
+	w.Write([]byte(shortUrl))
 }
 
 func (e *Endpoint) RedirectUrlHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +43,17 @@ func (e *Endpoint) RedirectUrlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", "https://practicum.yandex.ru/")
+	url := getCorrectUrl(r)
+
+	w.Header().Set("Location", url)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func getCorrectUrl(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	return fmt.Sprintf("%v://%v%v", scheme, r.Host, r.RequestURI)
 }
