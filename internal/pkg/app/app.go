@@ -25,8 +25,8 @@ func NewApp() (*App, error) {
 
 	application.mux = http.NewServeMux()
 
-	application.mux.HandleFunc("/", application.e.ShortenUrlHandler)
-	application.mux.HandleFunc("/{id}", application.e.RedirectUrlHandler)
+	application.mux.HandleFunc("/", application.e.ShortenURLHandler)
+	application.mux.HandleFunc("/{id}", application.e.RedirectURLHandler)
 
 	return application, nil
 }

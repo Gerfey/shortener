@@ -20,7 +20,7 @@ func NewEndpoint(g generator.Generator, s *store.Store) *Endpoint {
 	}
 }
 
-func (e *Endpoint) ShortenUrlHandler(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -32,14 +32,14 @@ func (e *Endpoint) ShortenUrlHandler(w http.ResponseWriter, r *http.Request) {
 
 	e.s.Set(id, string(bodyBytes))
 
-	shortUrl := getCorrectUrl(r) + id
+	shortURL := getCorrectURL(r) + id
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortUrl))
+	w.Write([]byte(shortURL))
 }
 
-func (e *Endpoint) RedirectUrlHandler(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -51,16 +51,16 @@ func (e *Endpoint) RedirectUrlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectUrl, exists := e.s.Get(id)
-	if exists == false {
+	redirectURL, exists := e.s.Get(id)
+	if !exists {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 	}
 
-	w.Header().Set("Location", redirectUrl)
+	w.Header().Set("Location", redirectURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func getCorrectUrl(r *http.Request) string {
+func getCorrectURL(r *http.Request) string {
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
