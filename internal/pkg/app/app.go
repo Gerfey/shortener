@@ -4,6 +4,7 @@ import (
 	"github.com/Gerfey/shortener/internal/app/endpoint"
 	"github.com/Gerfey/shortener/internal/app/generator"
 	"github.com/Gerfey/shortener/internal/app/middleware"
+	"github.com/Gerfey/shortener/internal/app/store"
 	"log"
 	"net/http"
 )
@@ -14,18 +15,20 @@ type App struct {
 }
 
 func NewApp() (*App, error) {
-	a := &App{}
+	application := &App{}
 
 	g := generator.NewGenerator()
 
-	a.e = endpoint.NewEndpoint(g)
+	s := store.NewStore()
 
-	a.mux = http.NewServeMux()
+	application.e = endpoint.NewEndpoint(g, s)
 
-	a.mux.HandleFunc("/", a.e.ShortenUrlHandler)
-	a.mux.HandleFunc("/{id}", a.e.RedirectUrlHandler)
+	application.mux = http.NewServeMux()
 
-	return a, nil
+	application.mux.HandleFunc("/", application.e.ShortenUrlHandler)
+	application.mux.HandleFunc("/{id}", application.e.RedirectUrlHandler)
+
+	return application, nil
 }
 
 func (a *App) Run() {

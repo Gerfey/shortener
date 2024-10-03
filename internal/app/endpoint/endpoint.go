@@ -3,16 +3,20 @@ package endpoint
 import (
 	"fmt"
 	"github.com/Gerfey/shortener/internal/app/generator"
+	"github.com/Gerfey/shortener/internal/app/store"
+	"io"
 	"net/http"
 )
 
 type Endpoint struct {
 	g generator.Generator
+	s *store.Store
 }
 
-func NewEndpoint(g generator.Generator) *Endpoint {
+func NewEndpoint(g generator.Generator, s *store.Store) *Endpoint {
 	return &Endpoint{
 		g: g,
+		s: s,
 	}
 }
 
@@ -23,6 +27,10 @@ func (e *Endpoint) ShortenUrlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := e.g.RandomString(8)
+
+	bodyBytes, _ := io.ReadAll(r.Body)
+
+	e.s.Set(id, string(bodyBytes))
 
 	shortUrl := getCorrectUrl(r) + id
 
@@ -43,9 +51,12 @@ func (e *Endpoint) RedirectUrlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := getCorrectUrl(r)
+	redirectUrl, exists := e.s.Get(id)
+	if exists == false {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+	}
 
-	w.Header().Set("Location", url)
+	w.Header().Set("Location", redirectUrl)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
