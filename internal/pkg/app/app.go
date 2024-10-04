@@ -3,30 +3,32 @@ package app
 import (
 	"github.com/Gerfey/shortener/internal/app/endpoint"
 	"github.com/Gerfey/shortener/internal/app/generator"
-	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/store"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 )
 
 type App struct {
-	e   *endpoint.Endpoint
-	mux *http.ServeMux
+	e *endpoint.Endpoint
+	r *chi.Mux
 }
 
 func NewApp() (*App, error) {
 	application := &App{}
 
 	g := generator.NewGenerator()
-
 	s := store.NewStore()
 
 	application.e = endpoint.NewEndpoint(g, s)
 
-	application.mux = http.NewServeMux()
+	r := chi.NewRouter()
 
-	application.mux.HandleFunc("/", application.e.ShortenURLHandler)
-	application.mux.HandleFunc("/{id}", application.e.RedirectURLHandler)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	application.r = r
 
 	return application, nil
 }
@@ -34,10 +36,12 @@ func NewApp() (*App, error) {
 func (a *App) Run() {
 	log.Println("Starting server...")
 
-	handler := middleware.Logging(a.mux)
-	handler = middleware.PanicRecovery(handler)
+	a.r.Route("/", func(r chi.Router) {
+		r.Post("/", a.e.ShortenURLHandler)
+		r.Get("/{id}", a.e.RedirectURLHandler)
+	})
 
-	err := http.ListenAndServe(":8080", handler)
+	err := http.ListenAndServe(":8080", a.r)
 	if err != nil {
 		log.Fatal(err)
 	}
