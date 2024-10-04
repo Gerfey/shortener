@@ -43,13 +43,13 @@ func TestRedirectURLHandler(t *testing.T) {
 		method       string
 		expectedCode int
 		setPathValue bool
-		expectedUrl  string
+		expectedURL  string
 	}{
-		{method: http.MethodGet, expectedCode: http.StatusTemporaryRedirect, setPathValue: true, expectedUrl: "https://example.com"},
-		{method: http.MethodGet, expectedCode: http.StatusBadRequest, setPathValue: false, expectedUrl: ""},
-		{method: http.MethodPut, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedUrl: ""},
-		{method: http.MethodDelete, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedUrl: ""},
-		{method: http.MethodPost, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedUrl: ""},
+		{method: http.MethodGet, expectedCode: http.StatusTemporaryRedirect, setPathValue: true, expectedURL: "https://example.com"},
+		{method: http.MethodGet, expectedCode: http.StatusBadRequest, setPathValue: false, expectedURL: ""},
+		{method: http.MethodPut, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedURL: ""},
+		{method: http.MethodDelete, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedURL: ""},
+		{method: http.MethodPost, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedURL: ""},
 	}
 
 	for _, tc := range testCase {
@@ -59,7 +59,7 @@ func TestRedirectURLHandler(t *testing.T) {
 			s := store.NewStore()
 
 			if tc.setPathValue {
-				s.Set(checkKey, tc.expectedUrl)
+				s.Set(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)
@@ -73,9 +73,9 @@ func TestRedirectURLHandler(t *testing.T) {
 
 			e.RedirectURLHandler(w, r)
 
-			if tc.expectedUrl != "" {
+			if tc.expectedURL != "" {
 				url := w.Header().Get("Location")
-				assert.Equal(t, tc.expectedUrl, url, "URL в Header Location не совпадает с ожидаемым")
+				assert.Equal(t, tc.expectedURL, url, "URL в Header Location не совпадает с ожидаемым")
 			}
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
