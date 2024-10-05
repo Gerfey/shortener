@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/app/config"
 	"github.com/Gerfey/shortener/internal/app/generator"
 	"github.com/Gerfey/shortener/internal/app/store"
 	"github.com/stretchr/testify/assert"
@@ -26,10 +27,13 @@ func TestShortenURLHandler(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", nil)
 			w := httptest.NewRecorder()
 
+			c := config.NewConfig(
+				config.ServerConfig{RunServerAddress: "", ShortenerServerAddress: ""},
+			)
 			g := generator.NewGenerator()
 			s := store.NewStore()
 
-			e := NewEndpoint(g, s)
+			e := NewEndpoint(g, s, c)
 
 			e.ShortenURLHandler(w, r)
 
@@ -67,9 +71,12 @@ func TestRedirectURLHandler(t *testing.T) {
 
 			w := httptest.NewRecorder()
 
+			c := config.NewConfig(
+				config.ServerConfig{RunServerAddress: "", ShortenerServerAddress: ""},
+			)
 			g := generator.NewGenerator()
 
-			e := NewEndpoint(g, s)
+			e := NewEndpoint(g, s, c)
 
 			e.RedirectURLHandler(w, r)
 

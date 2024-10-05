@@ -2,21 +2,25 @@ package endpoint
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/app/config"
 	"github.com/Gerfey/shortener/internal/app/generator"
 	"github.com/Gerfey/shortener/internal/app/store"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Endpoint struct {
 	g generator.Generator
 	s *store.Store
+	c *config.Config
 }
 
-func NewEndpoint(g generator.Generator, s *store.Store) *Endpoint {
+func NewEndpoint(g generator.Generator, s *store.Store, c *config.Config) *Endpoint {
 	return &Endpoint{
 		g: g,
 		s: s,
+		c: c,
 	}
 }
 
@@ -32,11 +36,16 @@ func (e *Endpoint) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	e.s.Set(id, string(bodyBytes))
 
-	shortURL := getCorrectURL(r) + id
+	urlFormat, err := formatUrl(r, e.c.GetShortenerServerAddress())
+	if err != nil {
+		panic("shortener server address " + urlFormat)
+	}
+
+	redirectURL := fmt.Sprintf("%v/%v", urlFormat, id)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortURL))
+	w.Write([]byte(redirectURL))
 }
 
 func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,11 +69,17 @@ func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func getCorrectURL(r *http.Request) string {
+func formatUrl(r *http.Request, URL string) (string, error) {
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
 	}
 
-	return fmt.Sprintf("%v://%v%v", scheme, r.Host, r.RequestURI)
+	urlParsed, err := url.Parse(URL)
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%v://%v", scheme, urlParsed.String()), err
 }

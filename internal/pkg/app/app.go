@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Gerfey/shortener/internal/app/config"
 	"github.com/Gerfey/shortener/internal/app/endpoint"
 	"github.com/Gerfey/shortener/internal/app/generator"
 	"github.com/Gerfey/shortener/internal/app/store"
@@ -11,17 +12,20 @@ import (
 )
 
 type App struct {
+	c *config.Config
 	e *endpoint.Endpoint
 	r *chi.Mux
 }
 
-func NewApp() (*App, error) {
+func NewApp(c *config.Config) (*App, error) {
 	application := &App{}
+
+	application.c = c
 
 	g := generator.NewGenerator()
 	s := store.NewStore()
 
-	application.e = endpoint.NewEndpoint(g, s)
+	application.e = endpoint.NewEndpoint(g, s, c)
 
 	r := chi.NewRouter()
 
@@ -41,7 +45,7 @@ func (a *App) Run() {
 		r.Get("/{id}", a.e.RedirectURLHandler)
 	})
 
-	err := http.ListenAndServe(":8080", a.r)
+	err := http.ListenAndServe(a.c.GetServerAddress(), a.r)
 	if err != nil {
 		log.Fatal(err)
 	}
