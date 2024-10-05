@@ -9,7 +9,7 @@ var (
 
 func parseFlags() {
 	flag.StringVar(&flagRunServerAddress, "a", ":8080", "Run server address and port")
-	flag.StringVar(&flagShortenerServerAddress, "b", "localhost:8080", "Run server address and port")
+	flag.StringVar(&flagShortenerServerAddress, "b", "http://localhost:8080", "Run server address and port")
 
 	flag.Parse()
 }

@@ -70,12 +70,11 @@ func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func formatURL(URL string) (string, error) {
-
 	urlParsed, err := url.Parse(URL)
 
 	if err != nil {
 		return "", err
 	}
 
-	return urlParsed.String(), err
+	return fmt.Sprintf("%v", urlParsed.String()), err
 }
