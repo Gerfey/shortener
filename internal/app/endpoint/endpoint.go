@@ -36,7 +36,7 @@ func (e *Endpoint) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	e.s.Set(id, string(bodyBytes))
 
-	urlFormat, err := formatUrl(r, e.c.GetShortenerServerAddress())
+	urlFormat, err := formatURL(e.c.GetShortenerServerAddress())
 	if err != nil {
 		panic("shortener server address " + urlFormat)
 	}
@@ -69,11 +69,7 @@ func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func formatUrl(r *http.Request, URL string) (string, error) {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
+func formatURL(URL string) (string, error) {
 
 	urlParsed, err := url.Parse(URL)
 
@@ -81,5 +77,5 @@ func formatUrl(r *http.Request, URL string) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%v://%v", scheme, urlParsed.String()), err
+	return urlParsed.String(), err
 }
