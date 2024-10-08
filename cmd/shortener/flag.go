@@ -5,22 +5,26 @@ import (
 	"os"
 )
 
-var (
-	flagRunServerAddress       string
-	flagShortenerServerAddress string
-)
+type Flags struct {
+	FlagServerRunAddress       string
+	FlagServerShortenerAddress string
+}
 
-func parseFlags() {
-	flag.StringVar(&flagRunServerAddress, "a", ":8080", "Run server address and port")
-	flag.StringVar(&flagShortenerServerAddress, "b", "http://localhost:8080", "Run server address and port")
+func parseFlags() Flags {
+	var flagServerRunAddress, flagServerShortenerAddress string
+
+	flag.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
+	flag.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
 
 	flag.Parse()
 
-	if envRunServerAddress := os.Getenv("SERVER_ADDRESS"); envRunServerAddress != "" {
-		flagRunServerAddress = envRunServerAddress
+	if envServerRunAddress := os.Getenv("SERVER_ADDRESS"); envServerRunAddress != "" {
+		flagServerRunAddress = envServerRunAddress
 	}
 
-	if envShortenerServerAddress := os.Getenv("BASE_URL"); envShortenerServerAddress != "" {
-		flagShortenerServerAddress = envShortenerServerAddress
+	if envServerShortenerAddress := os.Getenv("BASE_URL"); envServerShortenerAddress != "" {
+		flagServerShortenerAddress = envServerShortenerAddress
 	}
+
+	return Flags{flagServerRunAddress, flagServerShortenerAddress}
 }

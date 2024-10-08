@@ -2,6 +2,12 @@ package store
 
 import "sync"
 
+type Stored interface {
+	Get(key string) (string, bool)
+	Set(key, value string)
+	Delete(key string)
+}
+
 type Store struct {
 	sync.RWMutex
 	data map[string]string

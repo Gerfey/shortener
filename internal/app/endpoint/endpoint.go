@@ -2,25 +2,26 @@ package endpoint
 
 import (
 	"fmt"
-	"github.com/Gerfey/shortener/internal/app/config"
-	"github.com/Gerfey/shortener/internal/app/generator"
-	"github.com/Gerfey/shortener/internal/app/store"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/Gerfey/shortener/internal/app/generator"
+	"github.com/Gerfey/shortener/internal/app/settings"
+	"github.com/Gerfey/shortener/internal/app/store"
 )
 
 type Endpoint struct {
-	g generator.Generator
-	s *store.Store
-	c *config.Config
+	generator generator.Generated
+	storage   store.Stored
+	settings  *settings.Settings
 }
 
-func NewEndpoint(g generator.Generator, s *store.Store, c *config.Config) *Endpoint {
+func NewEndpoint(generator generator.Generated, storage store.Stored, settings *settings.Settings) *Endpoint {
 	return &Endpoint{
-		g: g,
-		s: s,
-		c: c,
+		generator: generator,
+		storage:   storage,
+		settings:  settings,
 	}
 }
 
@@ -30,13 +31,13 @@ func (e *Endpoint) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := e.g.RandomString(8)
+	id := e.generator.RandomString(8)
 
 	bodyBytes, _ := io.ReadAll(r.Body)
 
-	e.s.Set(id, string(bodyBytes))
+	e.storage.Set(id, string(bodyBytes))
 
-	urlFormat, err := formatURL(e.c.GetShortenerServerAddress())
+	urlFormat, err := formatURL(e.settings.ShortenerServerAddress())
 	if err != nil {
 		panic("shortener server address " + urlFormat)
 	}
@@ -45,7 +46,10 @@ func (e *Endpoint) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(redirectURL))
+	_, err = w.Write([]byte(redirectURL))
+	if err != nil {
+		return
+	}
 }
 
 func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +64,7 @@ func (e *Endpoint) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, exists := e.s.Get(id)
+	redirectURL, exists := e.storage.Get(id)
 	if !exists {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 	}

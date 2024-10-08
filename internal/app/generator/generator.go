@@ -4,7 +4,7 @@ import "math/rand"
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-type Generator interface {
+type Generated interface {
 	RandomString(length int) string
 }
 
