@@ -4,29 +4,30 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Gerfey/shortener/internal/app/endpoint"
-	"github.com/Gerfey/shortener/internal/app/generator"
+	"github.com/Gerfey/shortener/internal/app/handler"
+	"github.com/Gerfey/shortener/internal/app/repository/memory"
+	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
-	"github.com/Gerfey/shortener/internal/app/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type ShortenerApp struct {
 	settings *settings.Settings
-	endpoint *endpoint.Endpoint
+	handler  *handler.URLHandler
 	router   *chi.Mux
 }
 
-func NewShortenerApp(c *settings.Settings) (*ShortenerApp, error) {
+func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 	application := &ShortenerApp{}
 
-	application.settings = c
+	application.settings = s
 
-	g := generator.NewGenerator()
-	s := store.NewStore()
+	repository := memory.NewURLMemoryRepository()
+	shortenerService := service.NewShortenerService(repository)
+	URLService := service.NewURLService(s)
 
-	application.endpoint = endpoint.NewEndpoint(g, s, c)
+	application.handler = handler.NewURLHandler(shortenerService, URLService)
 
 	r := chi.NewRouter()
 
@@ -42,8 +43,8 @@ func (a *ShortenerApp) Run() {
 	log.Println("Starting server...")
 
 	a.router.Route("/", func(r chi.Router) {
-		r.Post("/", a.endpoint.ShortenURLHandler)
-		r.Get("/{id}", a.endpoint.RedirectURLHandler)
+		r.Post("/", a.handler.ShortenURLHandler)
+		r.Get("/{id}", a.handler.RedirectURLHandler)
 	})
 
 	err := http.ListenAndServe(a.settings.ServerAddress(), a.router)

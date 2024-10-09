@@ -1,4 +1,4 @@
-package store
+package memory
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func TestStore_Get(t *testing.T) {
 		exists bool
 	}{
 		{
-			name:  "Get existing key",
+			name:  "Find existing key",
 			store: store{data: map[string]string{"key": "value"}},
 			want: args{
 				key:   "key",
@@ -30,7 +30,7 @@ func TestStore_Get(t *testing.T) {
 			exists: true,
 		},
 		{
-			name:  "Get not found key",
+			name:  "Find not found key",
 			store: store{data: map[string]string{"key": "value"}},
 			want: args{
 				key:   "key1",
@@ -41,10 +41,10 @@ func TestStore_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Store{
+			s := &URLMemoryRepository{
 				data: tt.store.data,
 			}
-			value, exists := s.Get(tt.want.key)
+			value, exists := s.Find(tt.want.key)
 			if tt.exists && value != tt.want.value {
 				assert.Equal(t, value, tt.want.value, "Значение в хранилище не совпадает с ожидаемым")
 			}

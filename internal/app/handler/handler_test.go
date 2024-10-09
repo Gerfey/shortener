@@ -1,4 +1,4 @@
-package endpoint
+package handler
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/app/generator"
+	"github.com/Gerfey/shortener/internal/app/repository/memory"
+	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
-	"github.com/Gerfey/shortener/internal/app/store"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,13 +28,15 @@ func TestShortenURLHandler(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", nil)
 			w := httptest.NewRecorder()
 
-			c := settings.NewSettings(
+			s := settings.NewSettings(
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
-			g := generator.NewGenerator()
-			s := store.NewStore()
 
-			e := NewEndpoint(g, s, c)
+			repository := memory.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(repository)
+			URLService := service.NewURLService(s)
+
+			e := NewURLHandler(shortenerService, URLService)
 
 			e.ShortenURLHandler(w, r)
 
@@ -61,10 +63,10 @@ func TestRedirectURLHandler(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			s := store.NewStore()
+			repository := memory.NewURLMemoryRepository()
 
 			if tc.setPathValue {
-				s.Set(checkKey, tc.expectedURL)
+				_ = repository.Save(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)
@@ -72,12 +74,14 @@ func TestRedirectURLHandler(t *testing.T) {
 
 			w := httptest.NewRecorder()
 
-			c := settings.NewSettings(
+			s := settings.NewSettings(
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
-			g := generator.NewGenerator()
 
-			e := NewEndpoint(g, s, c)
+			shortenerService := service.NewShortenerService(repository)
+			URLService := service.NewURLService(s)
+
+			e := NewURLHandler(shortenerService, URLService)
 
 			e.RedirectURLHandler(w, r)
 
