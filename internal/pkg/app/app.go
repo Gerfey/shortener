@@ -1,8 +1,10 @@
 package app
 
 import (
-	"log"
 	"net/http"
+
+	middleware2 "github.com/Gerfey/shortener/internal/app/middleware"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/Gerfey/shortener/internal/app/repository/memory"
@@ -19,6 +21,12 @@ type ShortenerApp struct {
 }
 
 func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
+
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	log.SetLevel(log.InfoLevel)
+
 	application := &ShortenerApp{}
 
 	application.settings = s
@@ -31,7 +39,7 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
+	r.Use(middleware2.LoggingMiddleware)
 	r.Use(middleware.Recoverer)
 
 	application.router = r
