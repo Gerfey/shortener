@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -43,7 +44,12 @@ func TestWriteHeader(t *testing.T) {
 				t.Errorf("expected statusCode to be %d, but got %d", test.expectCode, writer.statusCode)
 			}
 
-			if result := recorder.Result(); result.StatusCode != test.expectCode {
+			result := recorder.Result()
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(result.Body)
+
+			if result.StatusCode != test.expectCode {
 				t.Errorf("expected ResponseWriter StatusCode to be %d, but got %d", test.expectCode, result.StatusCode)
 			}
 		})

@@ -53,7 +53,7 @@ func (a *ShortenerApp) Run() {
 	a.router.Route("/", func(r chi.Router) {
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
-		r.Post("/api/shorten", a.handler.ShortenJsonHandler)
+		r.Post("/api/shorten", a.handler.ShortenJSONHandler)
 	})
 
 	err := http.ListenAndServe(a.settings.ServerAddress(), a.router)

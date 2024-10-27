@@ -121,7 +121,7 @@ func TestShortenJsonHandler(t *testing.T) {
 
 			e := NewURLHandler(shortenerService, URLService)
 
-			e.ShortenJsonHandler(w, r)
+			e.ShortenJSONHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})

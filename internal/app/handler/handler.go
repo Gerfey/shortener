@@ -48,7 +48,7 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (e *URLHandler) ShortenJsonHandler(w http.ResponseWriter, r *http.Request) {
+func (e *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
