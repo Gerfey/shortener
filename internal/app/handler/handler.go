@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"github.com/Gerfey/shortener/internal/models"
 	"io"
 	"net/http"
 
@@ -42,6 +44,47 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write([]byte(shortenerURL))
 	if err != nil {
+		return
+	}
+}
+
+func (e *URLHandler) ShortenJsonHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.ShortenRequest
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if req.URL == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	shortenID, err := e.shortener.ShortenID(req.URL)
+	if err != nil {
+		return
+	}
+
+	shortenerURL, err := e.url.ShortenerURL(shortenID)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	resp := models.ShortenResponse{
+		Result: shortenerURL,
+	}
+
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(resp); err != nil {
 		return
 	}
 }

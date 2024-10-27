@@ -1,13 +1,13 @@
 package app
 
 import (
+	"github.com/Gerfey/shortener/internal/app/repository"
 	"net/http"
 
 	middleware2 "github.com/Gerfey/shortener/internal/app/middleware"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Gerfey/shortener/internal/app/handler"
-	"github.com/Gerfey/shortener/internal/app/repository/memory"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/go-chi/chi/v5"
@@ -31,7 +31,7 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	application.settings = s
 
-	repository := memory.NewURLMemoryRepository()
+	repository := repository.NewURLMemoryRepository()
 	shortenerService := service.NewShortenerService(repository)
 	URLService := service.NewURLService(s)
 
@@ -53,6 +53,7 @@ func (a *ShortenerApp) Run() {
 	a.router.Route("/", func(r chi.Router) {
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
+		r.Post("/api/shorten", a.handler.ShortenJsonHandler)
 	})
 
 	err := http.ListenAndServe(a.settings.ServerAddress(), a.router)

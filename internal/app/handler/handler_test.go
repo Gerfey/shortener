@@ -2,11 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/app/repository/memory"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestShortenURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			repository := memory.NewURLMemoryRepository()
+			repository := repository.NewURLMemoryRepository()
 			shortenerService := service.NewShortenerService(repository)
 			URLService := service.NewURLService(s)
 
@@ -63,7 +64,7 @@ func TestRedirectURLHandler(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			repository := memory.NewURLMemoryRepository()
+			repository := repository.NewURLMemoryRepository()
 
 			if tc.setPathValue {
 				_ = repository.Save(checkKey, tc.expectedURL)
@@ -89,6 +90,38 @@ func TestRedirectURLHandler(t *testing.T) {
 				url := w.Header().Get("Location")
 				assert.Equal(t, tc.expectedURL, url, "URL в Header Location не совпадает с ожидаемым")
 			}
+
+			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+		})
+	}
+}
+
+func TestShortenJsonHandler(t *testing.T) {
+	testCase := []struct {
+		method       string
+		body         string
+		expectedCode int
+	}{
+		{method: http.MethodGet, expectedCode: http.StatusMethodNotAllowed},
+		{method: http.MethodPost, body: `{"url": "https://practicum.yandex.ru"}`, expectedCode: http.StatusCreated},
+	}
+
+	for _, tc := range testCase {
+		t.Run(tc.method, func(t *testing.T) {
+			r := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
+			w := httptest.NewRecorder()
+
+			s := settings.NewSettings(
+				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+			)
+
+			repository := repository.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(repository)
+			URLService := service.NewURLService(s)
+
+			e := NewURLHandler(shortenerService, URLService)
+
+			e.ShortenJsonHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})

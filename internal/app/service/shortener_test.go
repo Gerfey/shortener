@@ -1,16 +1,16 @@
 package service
 
 import (
+	"github.com/Gerfey/shortener/internal/app/repository"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/app/repository/memory"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestShortenSuccess(t *testing.T) {
 	url := "https://example.com"
 
-	repository := memory.NewURLMemoryRepository()
+	repository := repository.NewURLMemoryRepository()
 
 	s := NewShortenerService(repository)
 
@@ -26,7 +26,7 @@ func TestFindURLSuccess(t *testing.T) {
 	url := "https://example.com"
 	shortURL := "s65fg"
 
-	repository := memory.NewURLMemoryRepository()
+	repository := repository.NewURLMemoryRepository()
 	_ = repository.Save(shortURL, url)
 
 	s := NewShortenerService(repository)
@@ -40,7 +40,7 @@ func TestFindURLSuccess(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	shortURL := "s65fg"
 
-	repository := memory.NewURLMemoryRepository()
+	repository := repository.NewURLMemoryRepository()
 
 	s := NewShortenerService(repository)
 
