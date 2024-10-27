@@ -19,13 +19,14 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		gzipWriter := &gzipResponseWriter{ResponseWriter: w, Writer: nil}
-		next.ServeHTTP(gzipWriter, r)
-
 		contentType := w.Header().Get("Content-Type")
 		if !strings.HasPrefix(contentType, "application/json") && !strings.HasPrefix(contentType, "text/html") {
+			next.ServeHTTP(w, r)
 			return
 		}
+
+		gzipWriter := &gzipResponseWriter{ResponseWriter: w, Writer: nil}
+		next.ServeHTTP(gzipWriter, r)
 
 		if gzipWriter.Writer == nil {
 			w.Header().Set("Content-Encoding", "gzip")
