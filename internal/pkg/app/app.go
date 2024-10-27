@@ -41,6 +41,7 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	r.Use(middleware2.LoggingMiddleware)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware2.GzipMiddleware)
 
 	application.router = r
 
@@ -53,13 +54,7 @@ func (a *ShortenerApp) Run() {
 	a.router.Route("/", func(r chi.Router) {
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
-	})
-
-	a.router.Route("/api", func(r chi.Router) {
-		r.Route("/shorten", func(shorten chi.Router) {
-			shorten.Use(middleware2.GzipMiddleware)
-			shorten.Post("/", a.handler.ShortenJSONHandler)
-		})
+		r.Post("/api/shorten", a.handler.ShortenJSONHandler)
 	})
 
 	err := http.ListenAndServe(a.settings.ServerAddress(), a.router)
