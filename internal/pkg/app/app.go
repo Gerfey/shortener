@@ -31,8 +31,8 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	application.settings = s
 
-	repository := repository.NewURLMemoryRepository()
-	shortenerService := service.NewShortenerService(repository)
+	memoryRepository := repository.NewURLMemoryRepository()
+	shortenerService := service.NewShortenerService(memoryRepository)
 	URLService := service.NewURLService(s)
 
 	application.handler = handler.NewURLHandler(shortenerService, URLService)
@@ -41,6 +41,7 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	r.Use(middleware2.LoggingMiddleware)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware2.GzipMiddleware)
 
 	application.router = r
 
