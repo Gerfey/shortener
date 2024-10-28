@@ -1,19 +1,14 @@
 package middleware
 
 import (
-	"compress/gzip"
+	"github.com/Gerfey/shortener/internal/app/compress"
 	"net/http"
 	"strings"
 )
 
-type gzipResponseWriter struct {
-	http.ResponseWriter
-	Writer *gzip.Writer
-	data   []byte
-}
-
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ow := w
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
 			return
@@ -25,26 +20,22 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		gzipWriter := &gzipResponseWriter{ResponseWriter: w, Writer: nil}
-		next.ServeHTTP(gzipWriter, r)
+		cw := compress.NewGzipWriter(w)
+		ow = cw
+		defer cw.Close()
 
-		if gzipWriter.Writer == nil {
-			w.Header().Set("Content-Encoding", "gzip")
-			gz := gzip.NewWriter(w)
-			gzipWriter.Writer = gz
-			defer gz.Close()
+		contentEncoding := r.Header.Get("Content-Encoding")
+		sendsGzip := strings.Contains(contentEncoding, "gzip")
+		if sendsGzip {
+			cr, err := compress.NewGzipReader(r.Body)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			r.Body = cr
+			defer cr.Close()
 		}
 
-		gzipWriter.Writer.Write(gzipWriter.data)
+		next.ServeHTTP(ow, r)
 	})
-}
-
-func (w *gzipResponseWriter) Write(b []byte) (int, error) {
-	w.data = append(w.data, b...)
-	return len(b), nil
-}
-
-func (w *gzipResponseWriter) WriteHeader(statusCode int) {
-	w.ResponseWriter.Header().Del("Content-Length")
-	w.ResponseWriter.WriteHeader(statusCode)
 }
