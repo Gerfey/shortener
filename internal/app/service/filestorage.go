@@ -69,15 +69,3 @@ func (fs *FileStorage) Load() (map[string]URLInfo, error) {
 
 	return urlStore, nil
 }
-
-func (fs *FileStorage) DeleteFileStorage() error {
-	fs.Lock()
-	defer fs.Unlock()
-
-	err := os.Remove(fs.Path)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
