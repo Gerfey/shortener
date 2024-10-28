@@ -14,7 +14,7 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		contentType := w.Header().Get("Content-Type")
+		contentType := r.Header.Get("Content-Type")
 		if !strings.HasPrefix(contentType, "application/json") && !strings.HasPrefix(contentType, "text/html") {
 			next.ServeHTTP(w, r)
 			return
@@ -25,8 +25,7 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		defer cw.Close()
 
 		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGzip := strings.Contains(contentEncoding, "gzip")
-		if sendsGzip {
+		if !strings.Contains(contentEncoding, "gzip") {
 			cr, err := compress.NewGzipReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
