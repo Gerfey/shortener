@@ -115,8 +115,8 @@ func TestShortenJsonHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			repository := repository.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(repository)
+			memoryRepository := repository.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
