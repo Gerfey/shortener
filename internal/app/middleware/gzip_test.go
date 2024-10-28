@@ -35,5 +35,8 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Write(body)
+	write, err := w.Write(body)
+	if err != nil {
+		return
+	}
 }
