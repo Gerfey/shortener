@@ -31,8 +31,10 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	application.settings = s
 
+	fileStorageService := service.NewFileStorage(s.Server.DefaultFilePath)
+
 	memoryRepository := repository.NewURLMemoryRepository()
-	shortenerService := service.NewShortenerService(memoryRepository)
+	shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
 	URLService := service.NewURLService(s)
 
 	application.handler = handler.NewURLHandler(shortenerService, URLService)

@@ -24,17 +24,20 @@ func TestShortenURLHandler(t *testing.T) {
 		{method: http.MethodPost, expectedCode: http.StatusCreated},
 	}
 
+	path := "test.json"
+
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", nil)
 			w := httptest.NewRecorder()
 
 			s := settings.NewSettings(
-				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: "", DefaultFilePath: path},
 			)
 
-			repository := repository.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(repository)
+			fileStorageService := service.NewFileStorage(path)
+			memoryRepository := repository.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -60,14 +63,17 @@ func TestRedirectURLHandler(t *testing.T) {
 		{method: http.MethodPost, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedURL: ""},
 	}
 
+	path := "test.json"
+
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			repository := repository.NewURLMemoryRepository()
+			fileStorageService := service.NewFileStorage(path)
+			memoryRepository := repository.NewURLMemoryRepository()
 
 			if tc.setPathValue {
-				_ = repository.Save(checkKey, tc.expectedURL)
+				_ = memoryRepository.Save(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)
@@ -79,7 +85,7 @@ func TestRedirectURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			shortenerService := service.NewShortenerService(repository)
+			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -106,6 +112,8 @@ func TestShortenJsonHandler(t *testing.T) {
 		{method: http.MethodPost, body: `{"url": "https://practicum.yandex.ru"}`, expectedCode: http.StatusCreated},
 	}
 
+	path := "test.json"
+
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
@@ -115,8 +123,9 @@ func TestShortenJsonHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
+			fileStorageService := service.NewFileStorage(path)
 			memoryRepository := repository.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(memoryRepository)
+			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)

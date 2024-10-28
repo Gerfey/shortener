@@ -23,3 +23,4 @@ vendor/
 .vscode
 
 coverage
+url_store.json
