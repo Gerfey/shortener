@@ -40,12 +40,12 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 		return nil, err
 	}
 
-	defer func(fs *service.FileStorage, mr *repository.URLMemoryRepository) {
-		err := saveFileData(fs, mr)
+	defer func() {
+		err := saveFileData(fileStorageService, memoryRepository)
 		if err != nil {
-
+			log.Errorf("failed to save file data: %v", err)
 		}
-	}(fileStorageService, memoryRepository)
+	}()
 
 	shortenerService := service.NewShortenerService(memoryRepository)
 	URLService := service.NewURLService(s)
