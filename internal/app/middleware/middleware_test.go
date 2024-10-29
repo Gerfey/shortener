@@ -31,7 +31,7 @@ func TestLoggingMiddleware(t *testing.T) {
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(10 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello, World!"))
+		_, _ = w.Write([]byte("Hello, World!"))
 	})
 
 	handler := LoggingMiddleware(testHandler)
@@ -70,7 +70,7 @@ func TestLoggingMiddlewareDifferentStatuses(t *testing.T) {
 
 	notFoundHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	})
 
 	handler := LoggingMiddleware(notFoundHandler)
