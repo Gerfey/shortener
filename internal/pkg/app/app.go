@@ -4,6 +4,9 @@ import (
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/google/uuid"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	middleware2 "github.com/Gerfey/shortener/internal/app/middleware"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +25,9 @@ type ShortenerApp struct {
 }
 
 func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
@@ -39,6 +45,15 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		<-c
+		err := saveFileData(fileStorageService, memoryRepository)
+		if err != nil {
+			log.Errorf("failed to save file data: %v", err)
+		}
+		os.Exit(1)
+	}()
 
 	defer func() {
 		err := saveFileData(fileStorageService, memoryRepository)
