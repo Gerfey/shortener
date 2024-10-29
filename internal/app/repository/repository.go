@@ -5,6 +5,7 @@ import (
 )
 
 type Repository interface {
+	All() map[string]string
 	Find(key string) (string, bool)
 	Save(key, value string) error
 }
@@ -20,16 +21,20 @@ func NewURLMemoryRepository() *URLMemoryRepository {
 	}
 }
 
-func (s *URLMemoryRepository) Find(key string) (string, bool) {
-	s.RLock()
-	defer s.RUnlock()
-	value, exists := s.data[key]
+func (r *URLMemoryRepository) All() map[string]string {
+	return r.data
+}
+
+func (r *URLMemoryRepository) Find(key string) (string, bool) {
+	r.RLock()
+	defer r.RUnlock()
+	value, exists := r.data[key]
 	return value, exists
 }
 
-func (s *URLMemoryRepository) Save(key, value string) error {
-	s.Lock()
-	defer s.Unlock()
-	s.data[key] = value
+func (r *URLMemoryRepository) Save(key, value string) error {
+	r.Lock()
+	defer r.Unlock()
+	r.data[key] = value
 	return nil
 }

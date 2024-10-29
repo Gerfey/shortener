@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"math/rand"
 
 	"github.com/Gerfey/shortener/internal/app/repository"
@@ -12,36 +11,17 @@ const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const lenShortID = 8
 
 type ShortenerService struct {
-	repository  repository.Repository
-	fileStorage *FileStorage
+	repository repository.Repository
 }
 
-func NewShortenerService(r repository.Repository, fileStorage *FileStorage) *ShortenerService {
-	urlInfos, _ := fileStorage.Load()
-
-	for _, urlInfo := range urlInfos {
-		_ = r.Save(urlInfo.ShortURL, urlInfo.OriginalURL)
-	}
-
-	return &ShortenerService{repository: r, fileStorage: fileStorage}
+func NewShortenerService(r repository.Repository) *ShortenerService {
+	return &ShortenerService{repository: r}
 }
 
 func (s *ShortenerService) ShortenID(url string) (string, error) {
 	shortID := generateShortID(lenShortID)
 
 	err := s.repository.Save(shortID, url)
-	if err != nil {
-		return "", err
-	}
-
-	urlInfo := URLInfo{
-		UUID:        uuid.New().String(),
-		ShortURL:    shortID,
-		OriginalURL: url,
-	}
-
-	err = s.fileStorage.Save(urlInfo)
-
 	if err != nil {
 		return "", err
 	}

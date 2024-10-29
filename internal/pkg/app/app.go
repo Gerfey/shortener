@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/Gerfey/shortener/internal/app/repository"
+	"github.com/google/uuid"
 	"net/http"
 
 	middleware2 "github.com/Gerfey/shortener/internal/app/middleware"
@@ -31,10 +32,17 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 
 	application.settings = s
 
+	memoryRepository := repository.NewURLMemoryRepository()
 	fileStorageService := service.NewFileStorage(s.Server.DefaultFilePath)
 
-	memoryRepository := repository.NewURLMemoryRepository()
-	shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
+	err := loadFileData(fileStorageService, memoryRepository)
+	if err != nil {
+		return nil, err
+	}
+
+	defer saveFileData(fileStorageService, memoryRepository)
+
+	shortenerService := service.NewShortenerService(memoryRepository)
 	URLService := service.NewURLService(s)
 
 	application.handler = handler.NewURLHandler(shortenerService, URLService)
@@ -48,6 +56,35 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 	application.router = r
 
 	return application, nil
+}
+
+func saveFileData(fs *service.FileStorage, mr *repository.URLMemoryRepository) error {
+	allMemoryURL := mr.All()
+
+	for key, url := range allMemoryURL {
+		urlInfo := service.URLInfo{
+			UUID:        uuid.New().String(),
+			ShortURL:    key,
+			OriginalURL: url,
+		}
+
+		fs.Save(urlInfo)
+	}
+
+	return nil
+}
+
+func loadFileData(fs *service.FileStorage, mr *repository.URLMemoryRepository) error {
+	urlInfos, _ := fs.Load()
+
+	for _, urlInfo := range urlInfos {
+		err := mr.Save(urlInfo.ShortURL, urlInfo.OriginalURL)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a *ShortenerApp) Run() {

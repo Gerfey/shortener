@@ -8,13 +8,11 @@ import (
 )
 
 func TestShortenSuccess(t *testing.T) {
-	path := "test.json"
 	url := "https://example.com"
 
-	fileStorageService := NewFileStorage(path)
 	memoryRepository := repository.NewURLMemoryRepository()
 
-	s := NewShortenerService(memoryRepository, fileStorageService)
+	s := NewShortenerService(memoryRepository)
 
 	shortURL, err := s.ShortenID(url)
 	findURL, _ := memoryRepository.Find(shortURL)
@@ -25,15 +23,13 @@ func TestShortenSuccess(t *testing.T) {
 }
 
 func TestFindURLSuccess(t *testing.T) {
-	path := "test.json"
 	url := "https://example.com"
 	shortURL := "s65fg"
 
-	fileStorageService := NewFileStorage(path)
 	memoryRepository := repository.NewURLMemoryRepository()
 	_ = memoryRepository.Save(shortURL, url)
 
-	s := NewShortenerService(memoryRepository, fileStorageService)
+	s := NewShortenerService(memoryRepository)
 
 	findURL, err := s.FindURL(shortURL)
 
@@ -42,13 +38,11 @@ func TestFindURLSuccess(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	path := "test.json"
 	shortURL := "s65fg"
 
-	fileStorageService := NewFileStorage(path)
 	memoryRepository := repository.NewURLMemoryRepository()
 
-	s := NewShortenerService(memoryRepository, fileStorageService)
+	s := NewShortenerService(memoryRepository)
 
 	_, err := s.FindURL(shortURL)
 

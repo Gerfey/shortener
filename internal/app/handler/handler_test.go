@@ -35,9 +35,8 @@ func TestShortenURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: "", DefaultFilePath: path},
 			)
 
-			fileStorageService := service.NewFileStorage(path)
 			memoryRepository := repository.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -63,13 +62,10 @@ func TestRedirectURLHandler(t *testing.T) {
 		{method: http.MethodPost, expectedCode: http.StatusMethodNotAllowed, setPathValue: false, expectedURL: ""},
 	}
 
-	path := "test.json"
-
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			fileStorageService := service.NewFileStorage(path)
 			memoryRepository := repository.NewURLMemoryRepository()
 
 			if tc.setPathValue {
@@ -85,7 +81,7 @@ func TestRedirectURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -112,8 +108,6 @@ func TestShortenJsonHandler(t *testing.T) {
 		{method: http.MethodPost, body: `{"url": "https://practicum.yandex.ru"}`, expectedCode: http.StatusCreated},
 	}
 
-	path := "test.json"
-
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
@@ -123,9 +117,8 @@ func TestShortenJsonHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			fileStorageService := service.NewFileStorage(path)
 			memoryRepository := repository.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(memoryRepository, fileStorageService)
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
