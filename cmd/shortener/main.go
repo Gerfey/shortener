@@ -14,6 +14,7 @@ func main() {
 		settings.ServerSettings{
 			ServerRunAddress:       flags.FlagServerRunAddress,
 			ServerShortenerAddress: flags.FlagServerShortenerAddress,
+			DefaultFilePath:        flags.FlagDefaultFilePath,
 		},
 	)
 

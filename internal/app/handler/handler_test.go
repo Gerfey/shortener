@@ -2,11 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/app/repository/memory"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/stretchr/testify/assert"
@@ -23,17 +24,19 @@ func TestShortenURLHandler(t *testing.T) {
 		{method: http.MethodPost, expectedCode: http.StatusCreated},
 	}
 
+	path := "test.json"
+
 	for _, tc := range testCase {
 		t.Run(tc.method, func(t *testing.T) {
 			r := httptest.NewRequest(tc.method, "/", nil)
 			w := httptest.NewRecorder()
 
 			s := settings.NewSettings(
-				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: "", DefaultFilePath: path},
 			)
 
-			repository := memory.NewURLMemoryRepository()
-			shortenerService := service.NewShortenerService(repository)
+			memoryRepository := repository.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -63,10 +66,10 @@ func TestRedirectURLHandler(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			repository := memory.NewURLMemoryRepository()
+			memoryRepository := repository.NewURLMemoryRepository()
 
 			if tc.setPathValue {
-				_ = repository.Save(checkKey, tc.expectedURL)
+				_ = memoryRepository.Save(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)
@@ -78,7 +81,7 @@ func TestRedirectURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			shortenerService := service.NewShortenerService(repository)
+			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
 			e := NewURLHandler(shortenerService, URLService)
@@ -89,6 +92,38 @@ func TestRedirectURLHandler(t *testing.T) {
 				url := w.Header().Get("Location")
 				assert.Equal(t, tc.expectedURL, url, "URL в Header Location не совпадает с ожидаемым")
 			}
+
+			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+		})
+	}
+}
+
+func TestShortenJsonHandler(t *testing.T) {
+	testCase := []struct {
+		method       string
+		body         string
+		expectedCode int
+	}{
+		{method: http.MethodGet, expectedCode: http.StatusMethodNotAllowed},
+		{method: http.MethodPost, body: `{"url": "https://practicum.yandex.ru"}`, expectedCode: http.StatusCreated},
+	}
+
+	for _, tc := range testCase {
+		t.Run(tc.method, func(t *testing.T) {
+			r := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
+			w := httptest.NewRecorder()
+
+			s := settings.NewSettings(
+				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+			)
+
+			memoryRepository := repository.NewURLMemoryRepository()
+			shortenerService := service.NewShortenerService(memoryRepository)
+			URLService := service.NewURLService(s)
+
+			e := NewURLHandler(shortenerService, URLService)
+
+			e.ShortenJSONHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})

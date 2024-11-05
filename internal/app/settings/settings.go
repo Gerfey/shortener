@@ -3,6 +3,7 @@ package settings
 type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
+	DefaultFilePath        string
 }
 
 type Settings struct {
@@ -14,6 +15,7 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 		Server: ServerSettings{
 			ServerRunAddress:       serverSettings.ServerRunAddress,
 			ServerShortenerAddress: serverSettings.ServerShortenerAddress,
+			DefaultFilePath:        serverSettings.DefaultFilePath,
 		},
 	}
 }

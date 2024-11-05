@@ -11,8 +11,8 @@ type URLService struct {
 	settings *settings.Settings
 }
 
-func NewURLService(settings *settings.Settings) *URLService {
-	return &URLService{settings: settings}
+func NewURLService(s *settings.Settings) *URLService {
+	return &URLService{settings: s}
 }
 
 func (us *URLService) ShortenerURL(shortenerID string) (string, error) {

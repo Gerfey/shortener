@@ -11,20 +11,26 @@ const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const lenShortID = 8
 
 type ShortenerService struct {
-	repo repository.Repository
+	repository repository.Repository
 }
 
-func NewShortenerService(repo repository.Repository) *ShortenerService {
-	return &ShortenerService{repo: repo}
+func NewShortenerService(r repository.Repository) *ShortenerService {
+	return &ShortenerService{repository: r}
 }
 
 func (s *ShortenerService) ShortenID(url string) (string, error) {
 	shortID := generateShortID(lenShortID)
-	return shortID, s.repo.Save(shortID, url)
+
+	err := s.repository.Save(shortID, url)
+	if err != nil {
+		return "", err
+	}
+
+	return shortID, err
 }
 
 func (s *ShortenerService) FindURL(code string) (string, error) {
-	url, exists := s.repo.Find(code)
+	url, exists := s.repository.Find(code)
 	if !exists {
 		return "", fmt.Errorf("ничего не найдено по значению %v", code)
 	}

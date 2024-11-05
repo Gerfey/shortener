@@ -23,3 +23,7 @@ vendor/
 .vscode
 
 coverage
+url_store.json
+internal/app/service/test.json
+internal/app/handler/test.json
+internal/app/handler/test.json
