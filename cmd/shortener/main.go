@@ -22,7 +22,7 @@ func main() {
 
 	db, err := database.NewDatabase(flags.FlagDefaultDatabaseDSN)
 	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+		log.Fatalf("Ошибка инициализации клиента БД: %v", err)
 	}
 
 	application, err := app.NewShortenerApp(configApplication, db)

@@ -115,7 +115,7 @@ func (a *ShortenerApp) Run() {
 	log.Printf("Starting server: %v", a.settings.ServerAddress())
 
 	a.router.Route("/", func(r chi.Router) {
-		r.Get("/ping", a.handler.Ping)
+		r.Get("/ping", a.handler.PingHandler)
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
 		r.Post("/api/shorten", a.handler.ShortenJSONHandler)

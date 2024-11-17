@@ -11,8 +11,8 @@ services:
     container_name: shortener.db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener
       POSTGRES_DB: shortener
     healthcheck:
       test: [ "CMD", "pg_isready", "-d", "shortener", "-U", "root" ]

@@ -18,7 +18,7 @@ func parseFlags() Flags {
 	flag.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
 	flag.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
 	flag.StringVar(&flagDefaultFilePath, "f", "url_store.json", "Path to the file where URLs are stored")
-	flag.StringVar(&flagDefaultDatabaseDSN, "d", "host=localhost port=5432 user=root password=password dbname=shortener sslmode=disable", "")
+	flag.StringVar(&flagDefaultDatabaseDSN, "d", "host=localhost port=5432 user=shortener password=shortener dbname=shortener sslmode=disable", "Database connection DSN")
 
 	flag.Parse()
 
