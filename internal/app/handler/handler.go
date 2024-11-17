@@ -2,23 +2,40 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/Gerfey/shortener/internal/app/database"
+	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/models"
 	"io"
 	"net/http"
-
-	"github.com/Gerfey/shortener/internal/app/service"
 )
 
 type URLHandler struct {
 	shortener *service.ShortenerService
 	url       *service.URLService
+	database  *database.Database
 }
 
-func NewURLHandler(shortener *service.ShortenerService, url *service.URLService) *URLHandler {
+func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, db *database.Database) *URLHandler {
 	return &URLHandler{
 		shortener: shortener,
 		url:       url,
+		database:  db,
 	}
+}
+
+func (e *URLHandler) Ping(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	connect, err := e.database.Connect()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	defer connect.Close()
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {

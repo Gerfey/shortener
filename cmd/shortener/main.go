@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Gerfey/shortener/internal/app/database"
 	"log"
 
 	"github.com/Gerfey/shortener/internal/app/settings"
@@ -15,10 +16,16 @@ func main() {
 			ServerRunAddress:       flags.FlagServerRunAddress,
 			ServerShortenerAddress: flags.FlagServerShortenerAddress,
 			DefaultFilePath:        flags.FlagDefaultFilePath,
+			DefaultDatabaseDSN:     flags.FlagDefaultDatabaseDSN,
 		},
 	)
 
-	application, err := app.NewShortenerApp(configApplication)
+	db, err := database.NewDatabase(flags.FlagDefaultDatabaseDSN)
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+
+	application, err := app.NewShortenerApp(configApplication, db)
 	if err != nil {
 		log.Fatal(err)
 	}

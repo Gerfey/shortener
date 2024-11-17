@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Gerfey/shortener/internal/app/database"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/google/uuid"
 	"net/http"
@@ -24,7 +25,7 @@ type ShortenerApp struct {
 	router   *chi.Mux
 }
 
-func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
+func NewShortenerApp(s *settings.Settings, db *database.Database) (*ShortenerApp, error) {
 	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -65,7 +66,7 @@ func NewShortenerApp(s *settings.Settings) (*ShortenerApp, error) {
 	shortenerService := service.NewShortenerService(memoryRepository)
 	URLService := service.NewURLService(s)
 
-	application.handler = handler.NewURLHandler(shortenerService, URLService)
+	application.handler = handler.NewURLHandler(shortenerService, URLService, db)
 
 	r := chi.NewRouter()
 
@@ -111,9 +112,10 @@ func loadFileData(fs *service.FileStorage, mr *repository.URLMemoryRepository) e
 }
 
 func (a *ShortenerApp) Run() {
-	log.Println("Starting server...")
+	log.Printf("Starting server: %v", a.settings.ServerAddress())
 
 	a.router.Route("/", func(r chi.Router) {
+		r.Get("/ping", a.handler.Ping)
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
 		r.Post("/api/shorten", a.handler.ShortenJSONHandler)

@@ -9,14 +9,16 @@ type Flags struct {
 	FlagServerRunAddress       string
 	FlagServerShortenerAddress string
 	FlagDefaultFilePath        string
+	FlagDefaultDatabaseDSN     string
 }
 
 func parseFlags() Flags {
-	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath string
+	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN string
 
 	flag.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
 	flag.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
 	flag.StringVar(&flagDefaultFilePath, "f", "url_store.json", "Path to the file where URLs are stored")
+	flag.StringVar(&flagDefaultDatabaseDSN, "d", "host=localhost port=5432 user=root password=password dbname=shortener sslmode=disable", "")
 
 	flag.Parse()
 
@@ -32,5 +34,9 @@ func parseFlags() Flags {
 		flagDefaultFilePath = envDefaultFilePath
 	}
 
-	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath}
+	if envDefaultDatabaseDSN := os.Getenv("DATABASE_DSN"); envDefaultDatabaseDSN != "" {
+		flagDefaultDatabaseDSN = envDefaultDatabaseDSN
+	}
+
+	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN}
 }
