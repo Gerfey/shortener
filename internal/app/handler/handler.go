@@ -31,7 +31,7 @@ func (e *URLHandler) Ping(w http.ResponseWriter, r *http.Request) {
 
 	connect, err := e.database.Connect()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Database connection failed", http.StatusInternalServerError)
 	}
 	defer connect.Close()
 
