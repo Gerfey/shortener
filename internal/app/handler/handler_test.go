@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/Gerfey/shortener/internal/app/database"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
@@ -36,12 +35,11 @@ func TestShortenURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: "", DefaultFilePath: path},
 			)
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
-			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService, db)
+			e := NewURLHandler(shortenerService, URLService, s)
 
 			e.ShortenURLHandler(w, r)
 
@@ -68,7 +66,7 @@ func TestRedirectURLHandler(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 
 			if tc.setPathValue {
 				_ = memoryRepository.Save(checkKey, tc.expectedURL)
@@ -85,9 +83,8 @@ func TestRedirectURLHandler(t *testing.T) {
 
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
-			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService, db)
+			e := NewURLHandler(shortenerService, URLService, s)
 
 			e.RedirectURLHandler(w, r)
 
@@ -120,12 +117,11 @@ func TestShortenJsonHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
-			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService, db)
+			e := NewURLHandler(shortenerService, URLService, s)
 
 			e.ShortenJSONHandler(w, r)
 
@@ -135,9 +131,11 @@ func TestShortenJsonHandler(t *testing.T) {
 }
 
 func TestPingHandler(t *testing.T) {
-	db, _ := database.NewDatabase("")
+	s := settings.NewSettings(
+		settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+	)
 
-	h := NewURLHandler(nil, nil, db)
+	h := NewURLHandler(nil, nil, s)
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	rec := httptest.NewRecorder()

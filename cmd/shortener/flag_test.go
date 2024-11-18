@@ -50,8 +50,8 @@ func TestParseFlags_Defaults(t *testing.T) {
 
 	assert.Equal(t, ":8080", flags.FlagServerRunAddress)
 	assert.Equal(t, "http://localhost:8080", flags.FlagServerShortenerAddress)
-	assert.Equal(t, "url_store.json", flags.FlagDefaultFilePath)
-	assert.Equal(t, "postgresql://shortener:shortener@localhost:5432/shortener", flags.FlagDefaultDatabaseDSN)
+	assert.Equal(t, "", flags.FlagDefaultFilePath)
+	assert.Equal(t, "", flags.FlagDefaultDatabaseDSN)
 }
 
 func TestParseFlags_WithEnv(t *testing.T) {

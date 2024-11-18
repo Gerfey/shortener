@@ -2,19 +2,18 @@ package service
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/models"
 	"math/rand"
-
-	"github.com/Gerfey/shortener/internal/app/repository"
 )
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const lenShortID = 8
 
 type ShortenerService struct {
-	repository repository.Repository
+	repository models.Repository
 }
 
-func NewShortenerService(r repository.Repository) *ShortenerService {
+func NewShortenerService(r models.Repository) *ShortenerService {
 	return &ShortenerService{repository: r}
 }
 

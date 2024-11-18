@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/Gerfey/shortener/internal/app/database"
+	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/app/service"
+	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
+	"github.com/jackc/pgx"
 	"io"
 	"net/http"
 )
@@ -12,14 +14,14 @@ import (
 type URLHandler struct {
 	shortener *service.ShortenerService
 	url       *service.URLService
-	database  *database.Database
+	settings  *settings.Settings
 }
 
-func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, db *database.Database) *URLHandler {
+func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, s *settings.Settings) *URLHandler {
 	return &URLHandler{
 		shortener: shortener,
 		url:       url,
-		database:  db,
+		settings:  s,
 	}
 }
 
@@ -29,12 +31,23 @@ func (e *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connect, err := e.database.Connect()
+	config, err := pgx.ParseConnectionString(e.settings.Server.DefaultDatabaseDSN)
 	if err != nil {
-		http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
 		return
 	}
-	defer connect.Close()
+
+	conn, err := pgx.Connect(config)
+	if err != nil {
+		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = repository.NewPostgresRepository(conn)
+	if err != nil {
+		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
