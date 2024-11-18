@@ -9,16 +9,23 @@ type Flags struct {
 	FlagServerRunAddress       string
 	FlagServerShortenerAddress string
 	FlagDefaultFilePath        string
+	FlagDefaultDatabaseDSN     string
 }
 
-func parseFlags() Flags {
-	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath string
+func parseFlags(args []string) Flags {
+	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN string
 
-	flag.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
-	flag.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
-	flag.StringVar(&flagDefaultFilePath, "f", "url_store.json", "Path to the file where URLs are stored")
+	fs := flag.NewFlagSet("shortener", flag.ExitOnError)
 
-	flag.Parse()
+	fs.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
+	fs.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
+	fs.StringVar(&flagDefaultFilePath, "f", "", "Path to the file where URLs are stored")
+	fs.StringVar(&flagDefaultDatabaseDSN, "d", "", "Database connection DSN")
+
+	err := fs.Parse(args)
+	if err != nil {
+		return Flags{}
+	}
 
 	if envServerRunAddress := os.Getenv("SERVER_ADDRESS"); envServerRunAddress != "" {
 		flagServerRunAddress = envServerRunAddress
@@ -32,5 +39,9 @@ func parseFlags() Flags {
 		flagDefaultFilePath = envDefaultFilePath
 	}
 
-	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath}
+	if envDefaultDatabaseDSN := os.Getenv("DATABASE_DSN"); envDefaultDatabaseDSN != "" {
+		flagDefaultDatabaseDSN = envDefaultDatabaseDSN
+	}
+
+	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN}
 }

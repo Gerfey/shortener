@@ -35,11 +35,11 @@ func TestShortenURLHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: "", DefaultFilePath: path},
 			)
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.ShortenURLHandler(w, r)
 
@@ -66,10 +66,10 @@ func TestRedirectURLHandler(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			checkKey := "s53dew1"
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 
 			if tc.setPathValue {
-				_ = memoryRepository.Save(checkKey, tc.expectedURL)
+				_, _ = memoryRepository.Save(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)
@@ -84,7 +84,7 @@ func TestRedirectURLHandler(t *testing.T) {
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.RedirectURLHandler(w, r)
 
@@ -117,15 +117,31 @@ func TestShortenJsonHandler(t *testing.T) {
 				settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 			)
 
-			memoryRepository := repository.NewURLMemoryRepository()
+			memoryRepository := repository.NewMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.ShortenJSONHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})
 	}
+}
+
+func TestPingHandler(t *testing.T) {
+	s := settings.NewSettings(
+		settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
+	)
+
+	memoryRepository := repository.NewMemoryRepository()
+	h := NewURLHandler(nil, nil, s, memoryRepository)
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+
+	h.PingHandler(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }
