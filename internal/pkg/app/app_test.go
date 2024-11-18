@@ -42,9 +42,10 @@ func TestShortenerApp_Run(t *testing.T) {
 	reqBytes, _ := json.Marshal(reqBody)
 
 	resp, err := http.Post(server.URL+"/api/shorten", "application/json", bytes.NewReader(reqBytes))
+	assert.NoError(t, err)
+	
 	defer resp.Body.Close()
 
-	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	var shortenResp map[string]string
