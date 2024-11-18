@@ -32,3 +32,14 @@ func (r *MemoryRepository) Save(key, value string) error {
 	r.data[key] = value
 	return nil
 }
+
+func (r *MemoryRepository) SaveBatch(urls map[string]string) error {
+	r.Lock()
+	defer r.Unlock()
+
+	for shortURL, originalURL := range urls {
+		r.data[shortURL] = originalURL
+	}
+
+	return nil
+}

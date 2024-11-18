@@ -32,7 +32,7 @@ func NewShortenerApp(s *settings.Settings, repository models.Repository) (*Short
 	shortenerService := service.NewShortenerService(repository)
 	URLService := service.NewURLService(s)
 
-	application.handler = handler.NewURLHandler(shortenerService, URLService, s)
+	application.handler = handler.NewURLHandler(shortenerService, URLService, s, repository)
 
 	r := chi.NewRouter()
 
@@ -49,6 +49,7 @@ func (a *ShortenerApp) Run() {
 	log.Printf("Starting server: %v", a.settings.ServerAddress())
 
 	a.router.Route("/", func(r chi.Router) {
+		r.Post("/api/shorten/batch", a.handler.ShortenBatchHandler)
 		r.Get("/ping", a.handler.PingHandler)
 		r.Post("/", a.handler.ShortenURLHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
