@@ -72,8 +72,8 @@ func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
 func TestURLMemoryRepository_All(t *testing.T) {
 	repo := NewURLMemoryRepository()
 
-	repo.Save("key1", "https://example1.com")
-	repo.Save("key2", "https://example2.com")
+	_ = repo.Save("key1", "https://example1.com")
+	_ = repo.Save("key2", "https://example2.com")
 
 	all := repo.All()
 	assert.Equal(t, 2, len(all))
