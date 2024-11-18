@@ -10,7 +10,7 @@ type Database struct {
 }
 
 func NewDatabase(s string) (*Database, error) {
-	config, err := pgx.ParseDSN(s)
+	config, err := pgx.ParseConnectionString(s)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
