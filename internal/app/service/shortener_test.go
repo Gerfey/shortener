@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	mockRepository "github.com/Gerfey/shortener/internal/app/repository/mocks"
+	"github.com/Gerfey/shortener/internal/mock"
 	"go.uber.org/mock/gomock"
 	"testing"
 
@@ -13,7 +13,7 @@ func TestShortenSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRepo := mockRepository.NewMockRepository(ctrl)
+	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
 	originalURL := "https://example.com"
@@ -29,7 +29,7 @@ func TestFindURLSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRepo := mockRepository.NewMockRepository(ctrl)
+	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
 	shortID := "s65fg"
@@ -51,7 +51,7 @@ func TestShortenerService_ShortenID_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRepo := mockRepository.NewMockRepository(ctrl)
+	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
 	mockRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(errors.New("database error"))

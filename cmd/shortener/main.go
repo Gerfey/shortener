@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/Gerfey/shortener/internal/app/database"
+	"github.com/Gerfey/shortener/internal/app/strategy"
+	"github.com/Gerfey/shortener/internal/models"
 	"log"
 	"os"
 
@@ -28,16 +29,28 @@ func run(flags Flags) error {
 		},
 	)
 
-	db, err := database.NewDatabase(flags.FlagDefaultDatabaseDSN)
+	var storageStrategy models.StorageStrategy
+
+	if flags.FlagDefaultDatabaseDSN != "" {
+		storageStrategy = strategy.NewPostgresStrategy(flags.FlagDefaultDatabaseDSN)
+	} else if flags.FlagDefaultFilePath != "" {
+		storageStrategy = strategy.NewFileStrategy(flags.FlagDefaultFilePath)
+	} else {
+		storageStrategy = strategy.NewMemoryStrategy()
+	}
+
+	repo, err := storageStrategy.Initialize()
 	if err != nil {
 		return err
 	}
+	defer storageStrategy.Close()
 
-	application, err := app.NewShortenerApp(configApplication, db)
+	application, err := app.NewShortenerApp(configApplication, repo)
 	if err != nil {
 		return err
 	}
 
 	application.Run()
+
 	return nil
 }

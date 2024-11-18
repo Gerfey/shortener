@@ -41,7 +41,7 @@ func TestStore_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &URLMemoryRepository{
+			s := &MemoryRepository{
 				data: tt.store.data,
 			}
 			value, exists := s.Find(tt.want.key)
@@ -56,7 +56,7 @@ func TestStore_Get(t *testing.T) {
 }
 
 func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
-	repo := NewURLMemoryRepository()
+	repo := NewMemoryRepository()
 
 	originalURL := "https://example.com"
 	shortID := "s65fg"
@@ -70,7 +70,7 @@ func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
 }
 
 func TestURLMemoryRepository_All(t *testing.T) {
-	repo := NewURLMemoryRepository()
+	repo := NewMemoryRepository()
 
 	_ = repo.Save("key1", "https://example1.com")
 	_ = repo.Save("key2", "https://example2.com")
