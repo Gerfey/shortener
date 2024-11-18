@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/app/database"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
@@ -38,8 +39,9 @@ func TestShortenURLHandler(t *testing.T) {
 			memoryRepository := repository.NewURLMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
+			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, db)
 
 			e.ShortenURLHandler(w, r)
 
@@ -83,8 +85,9 @@ func TestRedirectURLHandler(t *testing.T) {
 
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
+			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, db)
 
 			e.RedirectURLHandler(w, r)
 
@@ -120,12 +123,26 @@ func TestShortenJsonHandler(t *testing.T) {
 			memoryRepository := repository.NewURLMemoryRepository()
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
+			db, _ := database.NewDatabase("")
 
-			e := NewURLHandler(shortenerService, URLService)
+			e := NewURLHandler(shortenerService, URLService, db)
 
 			e.ShortenJSONHandler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
 		})
 	}
+}
+
+func TestPingHandler(t *testing.T) {
+	db, _ := database.NewDatabase("")
+
+	h := NewURLHandler(nil, nil, db)
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+
+	h.PingHandler(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }
