@@ -3,13 +3,14 @@ package main
 import (
 	"github.com/Gerfey/shortener/internal/app/database"
 	"log"
+	"os"
 
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/pkg/app"
 )
 
 func main() {
-	flags := parseFlags()
+	flags := parseFlags(os.Args[1:])
 
 	err := run(flags)
 	if err != nil {

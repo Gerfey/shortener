@@ -133,3 +133,16 @@ func TestShortenJsonHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestPingHandler(t *testing.T) {
+	db, _ := database.NewDatabase("")
+
+	h := NewURLHandler(nil, nil, db)
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+
+	h.PingHandler(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
