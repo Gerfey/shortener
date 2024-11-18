@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
@@ -12,16 +13,69 @@ import (
 )
 
 type URLHandler struct {
-	shortener *service.ShortenerService
-	url       *service.URLService
-	settings  *settings.Settings
+	shortener  *service.ShortenerService
+	url        *service.URLService
+	settings   *settings.Settings
+	repository models.Repository
 }
 
-func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, s *settings.Settings) *URLHandler {
+func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, s *settings.Settings, r models.Repository) *URLHandler {
 	return &URLHandler{
-		shortener: shortener,
-		url:       url,
-		settings:  s,
+		shortener:  shortener,
+		url:        url,
+		settings:   s,
+		repository: r,
+	}
+}
+
+func (e *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var batchRequest []models.BatchRequestItem
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&batchRequest); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if len(batchRequest) == 0 {
+		http.Error(w, "Batch is empty", http.StatusBadRequest)
+		return
+	}
+
+	urlsToSave := make(map[string]string)
+	batchResponse := make([]models.BatchResponseItem, 0, len(batchRequest))
+
+	for _, item := range batchRequest {
+		shortURL, err := e.shortener.ShortenID(item.OriginalURL)
+		if err != nil {
+			http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
+			return
+		}
+
+		urlsToSave[shortURL] = item.OriginalURL
+		batchResponse = append(batchResponse, models.BatchResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      fmt.Sprintf("%s/%s", e.settings.ShortenerServerAddress(), shortURL),
+		})
+	}
+
+	err := e.repository.SaveBatch(urlsToSave)
+	if err != nil {
+		http.Error(w, "Failed to save URLs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(batchResponse); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
 	}
 }
 

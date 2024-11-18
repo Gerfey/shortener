@@ -4,6 +4,7 @@ type Repository interface {
 	All() map[string]string
 	Find(key string) (string, bool)
 	Save(key, value string) error
+	SaveBatch(urls map[string]string) error
 }
 
 type StorageStrategy interface {

@@ -25,7 +25,7 @@ func TestShortenerApp_Run(t *testing.T) {
 	mockShortenerService := service.NewShortenerService(mockRepo)
 	mockURLService := service.NewURLService(configApplication)
 
-	urlHandler := handler.NewURLHandler(mockShortenerService, mockURLService, configApplication)
+	urlHandler := handler.NewURLHandler(mockShortenerService, mockURLService, configApplication, mockRepo)
 
 	router := chi.NewRouter()
 

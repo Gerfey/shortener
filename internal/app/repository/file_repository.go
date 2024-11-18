@@ -14,14 +14,27 @@ type URLInfo struct {
 }
 
 type FileRepository struct {
+	data map[string]string
 	Path string
 	sync.Mutex
 }
 
 func NewFileRepository(path string) *FileRepository {
 	return &FileRepository{
+		data: make(map[string]string),
 		Path: path,
 	}
+}
+
+func (fs *FileRepository) SaveBatch(urls map[string]string) error {
+	fs.Lock()
+	defer fs.Unlock()
+
+	for shortURL, originalURL := range urls {
+		fs.data[shortURL] = originalURL
+	}
+
+	return fs.saveToFile()
 }
 
 func (fs *FileRepository) Save(key, value string) error {
@@ -100,4 +113,18 @@ func (fs *FileRepository) Find(key string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func (fs *FileRepository) saveToFile() error {
+	fs.Lock()
+	defer fs.Unlock()
+
+	file, err := os.OpenFile(fs.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(fs.data)
 }

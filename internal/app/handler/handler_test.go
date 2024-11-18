@@ -39,7 +39,7 @@ func TestShortenURLHandler(t *testing.T) {
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService, s)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.ShortenURLHandler(w, r)
 
@@ -84,7 +84,7 @@ func TestRedirectURLHandler(t *testing.T) {
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService, s)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.RedirectURLHandler(w, r)
 
@@ -121,7 +121,7 @@ func TestShortenJsonHandler(t *testing.T) {
 			shortenerService := service.NewShortenerService(memoryRepository)
 			URLService := service.NewURLService(s)
 
-			e := NewURLHandler(shortenerService, URLService, s)
+			e := NewURLHandler(shortenerService, URLService, s, memoryRepository)
 
 			e.ShortenJSONHandler(w, r)
 
@@ -135,7 +135,8 @@ func TestPingHandler(t *testing.T) {
 		settings.ServerSettings{ServerRunAddress: "", ServerShortenerAddress: ""},
 	)
 
-	h := NewURLHandler(nil, nil, s)
+	memoryRepository := repository.NewMemoryRepository()
+	h := NewURLHandler(nil, nil, s, memoryRepository)
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	rec := httptest.NewRecorder()

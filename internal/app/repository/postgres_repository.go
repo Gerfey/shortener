@@ -16,6 +16,29 @@ func NewPostgresRepository(c *pgx.Conn) (*PostgresRepository, error) {
 	return &PostgresRepository{connection: c}, nil
 }
 
+func (r *PostgresRepository) SaveBatch(urls map[string]string) error {
+	tx, err := r.connection.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for shortURL, originalURL := range urls {
+		_, err := tx.Exec("INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING",
+			shortURL, originalURL)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (r *PostgresRepository) Save(shortURL, originalURL string) error {
 	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`
 	_, err := r.connection.Exec(query, shortURL, originalURL)
