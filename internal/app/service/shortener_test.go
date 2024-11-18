@@ -16,13 +16,14 @@ func TestShortenSuccess(t *testing.T) {
 	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
+	shortID := "s65fg"
 	originalURL := "https://example.com"
 
-	mockRepo.EXPECT().Save(gomock.Any(), originalURL).Return(nil).Times(1)
+	mockRepo.EXPECT().Save(gomock.Any(), originalURL).Return(shortID, nil).Times(1)
 
 	id, err := shortener.ShortenID(originalURL)
 	assert.NoError(t, err)
-	assert.Equal(t, len(id), 8)
+	assert.Equal(t, len(id), 5)
 }
 
 func TestFindURLSuccess(t *testing.T) {
@@ -54,7 +55,10 @@ func TestShortenerService_ShortenID_Error(t *testing.T) {
 	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
-	mockRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(errors.New("database error"))
+	shortID := "s65fg"
+	originalURL := "https://example.com"
+
+	mockRepo.EXPECT().Save(gomock.Any(), originalURL).Return(shortID, errors.New("database error"))
 
 	_, err := shortener.ShortenID("https://example.com")
 	assert.Error(t, err)

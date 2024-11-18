@@ -69,7 +69,7 @@ func TestRedirectURLHandler(t *testing.T) {
 			memoryRepository := repository.NewMemoryRepository()
 
 			if tc.setPathValue {
-				_ = memoryRepository.Save(checkKey, tc.expectedURL)
+				_, _ = memoryRepository.Save(checkKey, tc.expectedURL)
 			}
 
 			r := httptest.NewRequest(tc.method, fmt.Sprintf("/%s", checkKey), nil)

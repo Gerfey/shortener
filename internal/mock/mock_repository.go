@@ -69,12 +69,28 @@ func (mr *MockRepositoryMockRecorder) Find(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockRepository)(nil).Find), key)
 }
 
+// FindShortURL mocks base method.
+func (m *MockRepository) FindShortURL(originalURL string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindShortURL", originalURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindShortURL indicates an expected call of FindShortURL.
+func (mr *MockRepositoryMockRecorder) FindShortURL(originalURL any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockRepository)(nil).FindShortURL), originalURL)
+}
+
 // Save mocks base method.
-func (m *MockRepository) Save(key, value string) error {
+func (m *MockRepository) Save(key, value string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", key, value)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Save indicates an expected call of Save.

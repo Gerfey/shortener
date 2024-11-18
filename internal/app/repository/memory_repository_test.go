@@ -61,7 +61,7 @@ func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
 	originalURL := "https://example.com"
 	shortID := "s65fg"
 
-	err := repo.Save(shortID, originalURL)
+	_, err := repo.Save(shortID, originalURL)
 	assert.NoError(t, err)
 
 	url, found := repo.Find(shortID)
@@ -72,8 +72,8 @@ func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
 func TestURLMemoryRepository_All(t *testing.T) {
 	repo := NewMemoryRepository()
 
-	_ = repo.Save("key1", "https://example1.com")
-	_ = repo.Save("key2", "https://example2.com")
+	_, _ = repo.Save("key1", "https://example1.com")
+	_, _ = repo.Save("key2", "https://example2.com")
 
 	all := repo.All()
 	assert.Equal(t, 2, len(all))

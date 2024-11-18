@@ -46,7 +46,7 @@ func TestFileStorageSave(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
 			if !errors.Is(err, tC.expected) {
 				assert.Error(t, err)
 			}
@@ -75,7 +75,7 @@ func TestFileStorageLoad(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
 			if err != nil {
 				t.Fatal(err)
 			}
