@@ -2,7 +2,9 @@ package repository
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
+	"io"
 	"os"
 	"sync"
 )
@@ -37,7 +39,29 @@ func (fs *FileRepository) SaveBatch(urls map[string]string) error {
 	return fs.saveToFile()
 }
 
-func (fs *FileRepository) Save(key, value string) error {
+func (fs *FileRepository) Load() error {
+	fs.Lock()
+	defer fs.Unlock()
+
+	file, err := os.Open(fs.Path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&fs.data)
+	if err != nil && err != io.EOF {
+		return fmt.Errorf("failed to decode file: %w", err)
+	}
+
+	return nil
+}
+
+func (fs *FileRepository) Save(key, value string) (string, error) {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -49,21 +73,21 @@ func (fs *FileRepository) Save(key, value string) error {
 
 	file, err := os.OpenFile(fs.Path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return err
+		return key, err
 	}
 	defer file.Close()
 
 	data, err := json.Marshal(urlInfo)
 	if err != nil {
-		return err
+		return key, err
 	}
 
 	_, err = file.Write(append(data, '\n'))
 	if err != nil {
-		return err
+		return key, err
 	}
 
-	return nil
+	return key, nil
 }
 
 func (fs *FileRepository) All() map[string]string {
@@ -113,6 +137,19 @@ func (fs *FileRepository) Find(key string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func (fs *FileRepository) FindShortURL(originalURL string) (string, error) {
+	fs.Lock()
+	defer fs.Unlock()
+
+	for shortURL, storedOriginalURL := range fs.data {
+		if storedOriginalURL == originalURL {
+			return shortURL, nil
+		}
+	}
+
+	return "", fmt.Errorf("original URL not found")
 }
 
 func (fs *FileRepository) saveToFile() error {

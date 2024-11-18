@@ -19,8 +19,8 @@ func parseFlags(args []string) Flags {
 
 	fs.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
 	fs.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
-	fs.StringVar(&flagDefaultFilePath, "f", "", "Path to the file where URLs are stored")
-	fs.StringVar(&flagDefaultDatabaseDSN, "d", "", "Database connection DSN")
+	fs.StringVar(&flagDefaultFilePath, "f", "url_store.json", "Path to the file where URLs are stored")
+	fs.StringVar(&flagDefaultDatabaseDSN, "d", "postgresql://shortener:shortener@localhost:5432/shortener", "Database connection DSN")
 
 	err := fs.Parse(args)
 	if err != nil {

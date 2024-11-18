@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -26,11 +27,24 @@ func (r *MemoryRepository) Find(key string) (string, bool) {
 	return value, exists
 }
 
-func (r *MemoryRepository) Save(key, value string) error {
+func (r *MemoryRepository) FindShortURL(originalURL string) (string, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	for shortURL, storedOriginalURL := range r.data {
+		if storedOriginalURL == originalURL {
+			return shortURL, nil
+		}
+	}
+
+	return "", fmt.Errorf("original URL not found")
+}
+
+func (r *MemoryRepository) Save(key, value string) (string, error) {
 	r.Lock()
 	defer r.Unlock()
 	r.data[key] = value
-	return nil
+	return key, nil
 }
 
 func (r *MemoryRepository) SaveBatch(urls map[string]string) error {

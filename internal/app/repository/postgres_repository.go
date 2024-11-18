@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx"
 )
 
@@ -14,6 +16,16 @@ type PostgresRepository struct {
 
 func NewPostgresRepository(c *pgx.Conn) (*PostgresRepository, error) {
 	return &PostgresRepository{connection: c}, nil
+}
+
+func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
+	var shortURL string
+	query := `SELECT short_url FROM urls WHERE original_url = $1`
+	err := r.connection.QueryRow(query, originalURL).Scan(&shortURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to find short URL: %w", err)
+	}
+	return shortURL, nil
 }
 
 func (r *PostgresRepository) SaveBatch(urls map[string]string) error {
@@ -26,9 +38,13 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string) error {
 	}(tx)
 
 	for shortURL, originalURL := range urls {
-		_, err := tx.Exec("INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING",
+		_, err := tx.Exec("INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING",
 			shortURL, originalURL)
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				continue
+			}
 			return fmt.Errorf("failed to execute statement: %w", err)
 		}
 	}
@@ -41,13 +57,24 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string) error {
 	return nil
 }
 
-func (r *PostgresRepository) Save(shortURL, originalURL string) error {
-	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`
-	_, err := r.connection.Exec(query, shortURL, originalURL)
+func (r *PostgresRepository) Save(shortURL, originalURL string) (string, error) {
+	query := `INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING RETURNING short_url`
+
+	var resultShortURL string
+	err := r.connection.QueryRow(query, shortURL, originalURL).Scan(&resultShortURL)
 	if err != nil {
-		return fmt.Errorf("failed to save URL: %w", err)
+		if err.Error() == "no rows in result set" {
+			query = `SELECT short_url FROM urls WHERE original_url = $1`
+			newErr := r.connection.QueryRow(query, originalURL).Scan(&resultShortURL)
+			if newErr != nil {
+				return "", fmt.Errorf("failed to fetch existing short_url: %w", err)
+			}
+			return resultShortURL, err
+		}
+		return "", fmt.Errorf("failed to save URL: %w", err)
 	}
-	return nil
+
+	return resultShortURL, nil
 }
 
 func (r *PostgresRepository) Find(shortURL string) (string, bool) {

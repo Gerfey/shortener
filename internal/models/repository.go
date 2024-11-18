@@ -3,7 +3,8 @@ package models
 type Repository interface {
 	All() map[string]string
 	Find(key string) (string, bool)
-	Save(key, value string) error
+	FindShortURL(originalURL string) (string, error)
+	Save(key, value string) (string, error)
 	SaveBatch(urls map[string]string) error
 }
 

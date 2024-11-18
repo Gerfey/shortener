@@ -14,7 +14,14 @@ func NewFileStrategy(filePath string) *FileStrategy {
 }
 
 func (s *FileStrategy) Initialize() (models.Repository, error) {
-	return repository.NewFileRepository(s.FilePath), nil
+	fileRepository := repository.NewFileRepository(s.FilePath)
+
+	err := fileRepository.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	return fileRepository, nil
 }
 
 func (s *FileStrategy) Close() error {

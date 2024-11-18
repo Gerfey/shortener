@@ -115,7 +115,23 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	bodySaveURL, _ := io.ReadAll(r.Body)
 
 	shortenID, err := e.shortener.ShortenID(string(bodySaveURL))
+
 	if err != nil {
+		if err.Error() == "no rows in result set" {
+			shortenerURL, err := e.url.ShortenerURL(shortenID)
+			if err != nil {
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict)
+			_, err = w.Write([]byte(shortenerURL))
+			if err != nil {
+				return
+			}
+			return
+		}
+		http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
 		return
 	}
 
@@ -152,7 +168,22 @@ func (e *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	shortenID, err := e.shortener.ShortenID(req.URL)
+
 	if err != nil {
+		if err.Error() == "no rows in result set" {
+			shortenerURL, err := e.url.ShortenerURL(shortenID)
+			if err != nil {
+				return
+			}
+
+			resp := models.ShortenResponse{Result: shortenerURL}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_ = json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
 		return
 	}
 
