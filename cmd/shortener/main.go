@@ -11,6 +11,13 @@ import (
 func main() {
 	flags := parseFlags()
 
+	err := run(flags)
+	if err != nil {
+		log.Fatalf("Ошибка: %v", err)
+	}
+}
+
+func run(flags Flags) error {
 	configApplication := settings.NewSettings(
 		settings.ServerSettings{
 			ServerRunAddress:       flags.FlagServerRunAddress,
@@ -22,13 +29,14 @@ func main() {
 
 	db, err := database.NewDatabase(flags.FlagDefaultDatabaseDSN)
 	if err != nil {
-		log.Fatalf("Ошибка инициализации клиента БД: %v", err)
+		return err
 	}
 
 	application, err := app.NewShortenerApp(configApplication, db)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	application.Run()
+	return nil
 }

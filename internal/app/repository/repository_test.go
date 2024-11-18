@@ -54,3 +54,29 @@ func TestStore_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestURLMemoryRepository_SaveAndFind(t *testing.T) {
+	repo := NewURLMemoryRepository()
+
+	originalURL := "https://example.com"
+	shortID := "s65fg"
+
+	err := repo.Save(shortID, originalURL)
+	assert.NoError(t, err)
+
+	url, found := repo.Find(shortID)
+	assert.True(t, found)
+	assert.Equal(t, originalURL, url)
+}
+
+func TestURLMemoryRepository_All(t *testing.T) {
+	repo := NewURLMemoryRepository()
+
+	repo.Save("key1", "https://example1.com")
+	repo.Save("key2", "https://example2.com")
+
+	all := repo.All()
+	assert.Equal(t, 2, len(all))
+	assert.Equal(t, "https://example1.com", all["key1"])
+	assert.Equal(t, "https://example2.com", all["key2"])
+}
