@@ -4,6 +4,7 @@ type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
 	DefaultFilePath        string
+	DefaultDatabaseDSN     string
 }
 
 type Settings struct {
@@ -16,6 +17,7 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 			ServerRunAddress:       serverSettings.ServerRunAddress,
 			ServerShortenerAddress: serverSettings.ServerShortenerAddress,
 			DefaultFilePath:        serverSettings.DefaultFilePath,
+			DefaultDatabaseDSN:     serverSettings.DefaultDatabaseDSN,
 		},
 	}
 }

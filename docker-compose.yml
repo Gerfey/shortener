@@ -1,0 +1,45 @@
+volumes:
+  pgadmin_data:
+  shortener_data:
+
+networks:
+  shortener-network: ~
+
+services:
+  db:
+    image: postgres:17
+    container_name: shortener.db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener
+      POSTGRES_DB: shortener
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-d", "shortener", "-U", "root" ]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - shortener_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - shortener-network
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: shortener.pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_LISTEN_PORT: 80
+    depends_on:
+      - db
+    ports:
+      - "15432:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - shortener-network
+

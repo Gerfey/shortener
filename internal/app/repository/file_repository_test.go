@@ -1,4 +1,4 @@
-package service
+package repository
 
 import (
 	"errors"
@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-var testFileStorage *FileStorage
+var testFileStorage *FileRepository
 
 func init() {
-	testFileStorage = NewFileStorage("test.json")
+	testFileStorage = NewFileRepository("test.json")
 }
 
 func TestFileStorageSave(t *testing.T) {
@@ -46,7 +46,7 @@ func TestFileStorageSave(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			err := testFileStorage.Save(tC.urlInfo)
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
 			if !errors.Is(err, tC.expected) {
 				assert.Error(t, err)
 			}
@@ -75,15 +75,12 @@ func TestFileStorageLoad(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			err := testFileStorage.Save(tC.urlInfo)
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			_, err = testFileStorage.Load()
-			if (err != nil) != tC.expectError {
-				assert.Error(t, err)
-			}
+			_ = testFileStorage.All()
 
 			cleanFileStorage()
 		})

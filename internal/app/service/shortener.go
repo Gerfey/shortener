@@ -2,28 +2,39 @@ package service
 
 import (
 	"fmt"
+	"github.com/Gerfey/shortener/internal/models"
 	"math/rand"
-
-	"github.com/Gerfey/shortener/internal/app/repository"
 )
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const lenShortID = 8
 
 type ShortenerService struct {
-	repository repository.Repository
+	repository models.Repository
 }
 
-func NewShortenerService(r repository.Repository) *ShortenerService {
+func NewShortenerService(r models.Repository) *ShortenerService {
 	return &ShortenerService{repository: r}
+}
+
+func (s *ShortenerService) SaveBatch(urls map[string]string) error {
+	return s.repository.SaveBatch(urls)
+}
+
+func (s *ShortenerService) GetShortURL(originalURL string) (string, error) {
+	shortURL, err := s.repository.FindShortURL(originalURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to find short URL: %w", err)
+	}
+	return shortURL, nil
 }
 
 func (s *ShortenerService) ShortenID(url string) (string, error) {
 	shortID := generateShortID(lenShortID)
 
-	err := s.repository.Save(shortID, url)
+	shortID, err := s.repository.Save(shortID, url)
 	if err != nil {
-		return "", err
+		return shortID, err
 	}
 
 	return shortID, err
