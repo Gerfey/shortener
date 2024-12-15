@@ -107,7 +107,11 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) er
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(context.Background())
+	defer func() {
+		if rollbackErr := tx.Rollback(context.Background()); rollbackErr != nil && err == nil {
+			err = fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
+		}
+	}()
 
 	for shortURL, originalURL := range urls {
 		_, err = tx.Exec(context.Background(), `
@@ -135,7 +139,11 @@ func (r *PostgresRepository) DeleteUserURLsBatch(shortURLs []string, userID stri
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(context.Background())
+	defer func() {
+		if rollbackErr := tx.Rollback(context.Background()); rollbackErr != nil && err == nil {
+			err = fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
+		}
+	}()
 
 	for _, shortURL := range shortURLs {
 		_, err = tx.Exec(context.Background(), `
