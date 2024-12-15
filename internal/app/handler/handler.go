@@ -66,6 +66,11 @@ func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
