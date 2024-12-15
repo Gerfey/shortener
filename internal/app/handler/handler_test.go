@@ -501,8 +501,12 @@ func TestURLHandler_DeleteUserURLsHandler(t *testing.T) {
 			repo := NewMockRepository()
 			handler := NewURLHandler(nil, nil, nil, repo)
 
-			repo.Save("abc123", "http://example1.com", "test-user")
-			repo.Save("def456", "http://example2.com", "test-user")
+			short1, err := repo.Save("abc123", "http://example1.com", "test-user")
+			assert.NoError(t, err)
+			assert.Equal(t, "abc123", short1)
+			short2, err := repo.Save("def456", "http://example2.com", "test-user")
+			assert.NoError(t, err)
+			assert.Equal(t, "def456", short2)
 
 			req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewBufferString(tt.requestBody))
 			if tt.userID != "" {
@@ -541,7 +545,8 @@ func TestURLHandler_RedirectURLHandler_WithDeletedURLs(t *testing.T) {
 			name:     "active url",
 			shortURL: "abc123",
 			setupRepo: func(repo *MockRepository) {
-				repo.Save("abc123", "http://example.com", "test-user")
+				_, err := repo.Save("abc123", "http://example.com", "test-user")
+				assert.NoError(t, err)
 			},
 			expectedStatus: http.StatusTemporaryRedirect,
 		},
@@ -549,8 +554,10 @@ func TestURLHandler_RedirectURLHandler_WithDeletedURLs(t *testing.T) {
 			name:     "deleted url",
 			shortURL: "def456",
 			setupRepo: func(repo *MockRepository) {
-				repo.Save("def456", "http://example.com", "test-user")
-				repo.DeleteUserURLsBatch([]string{"def456"}, "test-user")
+				_, err := repo.Save("def456", "http://example.com", "test-user")
+				assert.NoError(t, err)
+				err = repo.DeleteUserURLsBatch([]string{"def456"}, "test-user")
+				assert.NoError(t, err)
 			},
 			expectedStatus: http.StatusGone,
 		},

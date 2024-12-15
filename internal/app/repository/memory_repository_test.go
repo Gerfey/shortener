@@ -168,7 +168,8 @@ func TestMemoryRepository_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	for _, u := range urls {
-		repo.Save(u.shortURL, u.originalURL, u.userID)
+		_, err := repo.Save(u.shortURL, u.originalURL, u.userID)
+		assert.NoError(t, err)
 	}
 
 	err := repo.DeleteUserURLsBatch([]string{"abc123", "def456"}, "user1")
@@ -192,14 +193,15 @@ func TestMemoryRepository_DeleteUserURLsBatch(t *testing.T) {
 func TestMemoryRepository_Find_WithDeletedURLs(t *testing.T) {
 	repo := NewMemoryRepository()
 
-	repo.Save("test123", "http://example.com", "user1")
+	_, err := repo.Save("test123", "http://example.com", "user1")
+	assert.NoError(t, err)
 
 	originalURL, exists, isDeleted := repo.Find("test123")
 	assert.True(t, exists)
 	assert.False(t, isDeleted)
 	assert.Equal(t, "http://example.com", originalURL)
 
-	err := repo.DeleteUserURLsBatch([]string{"test123"}, "user1")
+	err = repo.DeleteUserURLsBatch([]string{"test123"}, "user1")
 	assert.NoError(t, err)
 
 	originalURL, exists, isDeleted = repo.Find("test123")
