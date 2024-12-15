@@ -2,14 +2,18 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx"
 	"io"
 	"net/http"
+)
+
+const (
+	UserIDCookieName = "user_id"
 )
 
 type URLHandler struct {
@@ -28,85 +32,203 @@ func NewURLHandler(shortener *service.ShortenerService, url *service.URLService,
 	}
 }
 
-func (e *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil || cookie == nil {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	var batchRequest []models.BatchRequestItem
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&batchRequest); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	userID := cookie.Value
+	urls, err := h.repository.GetUserURLs(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if len(batchRequest) == 0 {
-		http.Error(w, "Batch is empty", http.StatusBadRequest)
+	if len(urls) == 0 {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	urlsToSave := make(map[string]string)
-	batchResponse := make([]models.BatchResponseItem, 0, len(batchRequest))
+	baseURL := h.settings.ShortenerServerAddress()
+	for i := range urls {
+		urls[i].ShortURL = baseURL + "/" + urls[i].ShortURL
+	}
 
-	for _, item := range batchRequest {
-		shortURL, err := e.shortener.ShortenID(item.OriginalURL)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(urls)
+}
+
+func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	if len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil || cookie == nil {
+		userID := uuid.New().String()
+		cookie = &http.Cookie{
+			Name:     UserIDCookieName,
+			Value:    userID,
+			Path:     "/",
+			HttpOnly: true,
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	shortURL, err := h.shortener.ShortenID(string(body), cookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(h.settings.ShortenerServerAddress() + "/" + shortURL))
+}
+
+func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	originalURL, found := h.repository.Find(id)
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		URL string `json:"url"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if request.URL == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil || cookie == nil {
+		userID := uuid.New().String()
+		cookie = &http.Cookie{
+			Name:     UserIDCookieName,
+			Value:    userID,
+			Path:     "/",
+			HttpOnly: true,
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	shortURL, err := h.shortener.ShortenID(request.URL, cookie.Value)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		Result string `json:"result"`
+	}{
+		Result: h.settings.ShortenerServerAddress() + "/" + shortURL,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
+	var request []struct {
+		CorrelationID string `json:"correlation_id"`
+		OriginalURL   string `json:"original_url"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil || cookie == nil {
+		userID := uuid.New().String()
+		cookie = &http.Cookie{
+			Name:     UserIDCookieName,
+			Value:    userID,
+			Path:     "/",
+			HttpOnly: true,
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	urls := make(map[string]string)
+	response := make([]struct {
+		CorrelationID string `json:"correlation_id"`
+		ShortURL      string `json:"short_url"`
+	}, len(request))
+
+	for i, item := range request {
+		shortURL, err := h.shortener.ShortenID(item.OriginalURL, cookie.Value)
 		if err != nil {
-			http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		urlsToSave[shortURL] = item.OriginalURL
-		batchResponse = append(batchResponse, models.BatchResponseItem{
+		urls[shortURL] = item.OriginalURL
+		response[i] = struct {
+			CorrelationID string `json:"correlation_id"`
+			ShortURL      string `json:"short_url"`
+		}{
 			CorrelationID: item.CorrelationID,
-			ShortURL:      fmt.Sprintf("%s/%s", e.settings.ShortenerServerAddress(), shortURL),
-		})
+			ShortURL:      h.settings.ShortenerServerAddress() + "/" + shortURL,
+		}
 	}
 
-	err := e.repository.SaveBatch(urlsToSave)
-	if err != nil {
-		http.Error(w, "Failed to save URLs", http.StatusInternalServerError)
+	if err := h.repository.SaveBatch(urls, cookie.Value); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
-	encoder := json.NewEncoder(w)
-	if err := encoder.Encode(batchResponse); err != nil {
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-		return
-	}
+	json.NewEncoder(w).Encode(response)
 }
 
-func (e *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	config, err := pgx.ParseConnectionString(e.settings.Server.DefaultDatabaseDSN)
+func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
+	err := h.repository.Ping()
 	if err != nil {
-		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	conn, err := pgx.Connect(config)
-	if err != nil {
-		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = repository.NewPostgresRepository(conn)
-	if err != nil {
-		http.Error(w, "PostgresRepository connection failed", http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
-func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -114,11 +236,14 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	bodySaveURL, _ := io.ReadAll(r.Body)
 
-	shortenID, err := e.shortener.ShortenID(string(bodySaveURL))
+	cookie, _ := r.Cookie(UserIDCookieName)
+	userID := cookie.Value
+
+	shortenID, err := h.shortener.ShortenID(string(bodySaveURL), userID)
 
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-			shortenerURL, err := e.url.ShortenerURL(shortenID)
+			shortenerURL, err := h.url.ShortenerURL(shortenID)
 			if err != nil {
 				return
 			}
@@ -135,7 +260,7 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortenerURL, err := e.url.ShortenerURL(shortenID)
+	shortenerURL, err := h.url.ShortenerURL(shortenID)
 	if err != nil {
 		return
 	}
@@ -147,81 +272,4 @@ func (e *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-}
-
-func (e *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req models.ShortenRequest
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&req); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if req.URL == "" {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	shortenID, err := e.shortener.ShortenID(req.URL)
-
-	if err != nil {
-		if err.Error() == "no rows in result set" {
-			shortenerURL, err := e.url.ShortenerURL(shortenID)
-			if err != nil {
-				return
-			}
-
-			resp := models.ShortenResponse{Result: shortenerURL}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			_ = json.NewEncoder(w).Encode(resp)
-			return
-		}
-
-		http.Error(w, "Failed to shorten URL", http.StatusInternalServerError)
-		return
-	}
-
-	shortenerURL, err := e.url.ShortenerURL(shortenID)
-	if err != nil {
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	resp := models.ShortenResponse{
-		Result: shortenerURL,
-	}
-
-	enc := json.NewEncoder(w)
-	if err := enc.Encode(resp); err != nil {
-		return
-	}
-}
-
-func (e *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	id := r.PathValue("id")
-	if len(id) == 0 {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	redirectURL, err := e.shortener.FindURL(id)
-	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-	}
-
-	w.Header().Set("Location", redirectURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
 }

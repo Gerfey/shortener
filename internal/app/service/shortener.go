@@ -17,8 +17,8 @@ func NewShortenerService(r models.Repository) *ShortenerService {
 	return &ShortenerService{repository: r}
 }
 
-func (s *ShortenerService) SaveBatch(urls map[string]string) error {
-	return s.repository.SaveBatch(urls)
+func (s *ShortenerService) SaveBatch(urls map[string]string, userID string) error {
+	return s.repository.SaveBatch(urls, userID)
 }
 
 func (s *ShortenerService) GetShortURL(originalURL string) (string, error) {
@@ -29,15 +29,15 @@ func (s *ShortenerService) GetShortURL(originalURL string) (string, error) {
 	return shortURL, nil
 }
 
-func (s *ShortenerService) ShortenID(url string) (string, error) {
+func (s *ShortenerService) ShortenID(url string, userID string) (string, error) {
 	shortID := generateShortID(lenShortID)
 
-	shortID, err := s.repository.Save(shortID, url)
+	shortID, err := s.repository.Save(shortID, url, userID)
 	if err != nil {
 		return shortID, err
 	}
 
-	return shortID, err
+	return shortID, nil
 }
 
 func (s *ShortenerService) FindURL(code string) (string, error) {
