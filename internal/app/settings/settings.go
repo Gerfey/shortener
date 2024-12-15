@@ -1,13 +1,10 @@
 package settings
 
-import "time"
-
 type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
 	DefaultFilePath        string
 	DefaultDatabaseDSN     string
-	ShutdownTimeout        time.Duration
 }
 
 type Settings struct {
@@ -21,7 +18,6 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 			ServerShortenerAddress: serverSettings.ServerShortenerAddress,
 			DefaultFilePath:        serverSettings.DefaultFilePath,
 			DefaultDatabaseDSN:     serverSettings.DefaultDatabaseDSN,
-			ShutdownTimeout:        serverSettings.ShutdownTimeout,
 		},
 	}
 }
@@ -32,8 +28,4 @@ func (c *Settings) ServerAddress() string {
 
 func (c *Settings) ShortenerServerAddress() string {
 	return c.Server.ServerShortenerAddress
-}
-
-func (c *Settings) ShutdownTimeout() time.Duration {
-	return c.Server.ShutdownTimeout
 }

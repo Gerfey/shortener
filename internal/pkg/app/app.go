@@ -1,101 +1,63 @@
 package app
 
 import (
-	"context"
+	middleware2 "github.com/Gerfey/shortener/internal/app/middleware"
+	"github.com/Gerfey/shortener/internal/models"
+	log "github.com/sirupsen/logrus"
+	"net/http"
+
 	"github.com/Gerfey/shortener/internal/app/handler"
-	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
-	"github.com/Gerfey/shortener/internal/models"
 	"github.com/go-chi/chi/v5"
-	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type ShortenerApp struct {
-	settings   *settings.Settings
-	router     *chi.Mux
-	handler    *handler.URLHandler
-	server     *http.Server
-	strategy   models.StorageStrategy
-	repository models.Repository
+	settings *settings.Settings
+	handler  *handler.URLHandler
+	router   *chi.Mux
 }
 
-func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrategy) (*ShortenerApp, error) {
-	logrus.SetFormatter(&logrus.TextFormatter{
+func NewShortenerApp(s *settings.Settings, repository models.Repository) (*ShortenerApp, error) {
+	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
 	})
-	logrus.SetLevel(logrus.InfoLevel)
+	log.SetLevel(log.InfoLevel)
 
-	repository, err := strategy.Initialize()
-	if err != nil {
-		return nil, err
-	}
+	application := &ShortenerApp{}
+
+	application.settings = s
 
 	shortenerService := service.NewShortenerService(repository)
-	urlService := service.NewURLService(settings)
-	urlHandler := handler.NewURLHandler(shortenerService, urlService, settings, repository)
+	URLService := service.NewURLService(s)
 
-	router := chi.NewRouter()
-	router.Use(middleware.LoggingMiddleware)
-	router.Use(middleware.GzipMiddleware)
+	application.handler = handler.NewURLHandler(shortenerService, URLService, s, repository)
 
-	application := &ShortenerApp{
-		settings:   settings,
-		router:     router,
-		handler:    urlHandler,
-		strategy:   strategy,
-		repository: repository,
-		server: &http.Server{
-			Addr:    settings.ServerAddress(),
-			Handler: router,
-		},
-	}
+	r := chi.NewRouter()
+
+	r.Use(middleware2.LoggingMiddleware)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware2.GzipMiddleware)
+
+	application.router = r
 
 	return application, nil
 }
 
-func (a *ShortenerApp) configureRouter() {
-	a.router.Route("/", func(r chi.Router) {
-		r.Post("/", middleware.AuthMiddleware(a.handler.ShortenHandler))
-		r.Post("/api/shorten", middleware.AuthMiddleware(a.handler.ShortenJSONHandler))
-		r.Post("/api/shorten/batch", middleware.AuthMiddleware(a.handler.ShortenBatchHandler))
-		r.Get("/api/user/urls", middleware.AuthMiddleware(a.handler.GetUserURLsHandler))
-		r.Get("/ping", a.handler.PingHandler)
-		r.Get("/{id}", a.handler.RedirectURLHandler)
-	})
-}
-
 func (a *ShortenerApp) Run() {
-	logrus.Printf("Starting server: %v", a.settings.ServerAddress())
+	log.Printf("Starting server: %v", a.settings.ServerAddress())
 
-	a.configureRouter()
+	a.router.Route("/", func(r chi.Router) {
+		r.Post("/api/shorten/batch", a.handler.ShortenBatchHandler)
+		r.Get("/ping", a.handler.PingHandler)
+		r.Post("/", a.handler.ShortenURLHandler)
+		r.Get("/{id}", a.handler.RedirectURLHandler)
+		r.Post("/api/shorten", a.handler.ShortenJSONHandler)
+	})
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logrus.Fatal(err)
-		}
-	}()
-
-	<-stop
-	logrus.Info("Shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), a.settings.ShutdownTimeout())
-	defer cancel()
-
-	if err := a.server.Shutdown(ctx); err != nil {
-		logrus.Error("Server forced to shutdown:", err)
+	err := http.ListenAndServe(a.settings.ServerAddress(), a.router)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	if err := a.strategy.Close(); err != nil {
-		logrus.Error("Error closing storage:", err)
-	}
-
-	logrus.Info("Server stopped")
 }
