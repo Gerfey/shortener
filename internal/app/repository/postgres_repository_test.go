@@ -7,7 +7,12 @@ import (
 )
 
 func TestNewDatabase_Success(t *testing.T) {
-	t.Skip("Skipping database test - requires actual database connection")
+	config, _ := pgx.ParseConnectionString("postgresql://user:password@localhost:5432/testdb")
+	conn, _ := pgx.Connect(config)
+
+	db, err := NewPostgresRepository(conn)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
 }
 
 func TestNewDatabase_Failure(t *testing.T) {

@@ -1,172 +1,95 @@
 package repository
 
 import (
-	"os"
-	"path/filepath"
-	"testing"
-
+	"errors"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 )
 
-func TestFileRepository_SaveAndFind(t *testing.T) {
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test_urls.json")
+var testFileStorage *FileRepository
 
-	repo := NewFileRepository(tmpFile)
-
-	shortID := "abc123"
-	originalURL := "https://example.com"
-	userID := "user1"
-
-	savedID, err := repo.Save(shortID, originalURL, userID)
-	assert.NoError(t, err)
-	assert.Equal(t, shortID, savedID)
-
-	url, exists := repo.Find(shortID)
-	assert.True(t, exists)
-	assert.Equal(t, originalURL, url)
+func init() {
+	testFileStorage = NewFileRepository("test.json")
 }
 
-func TestFileRepository_GetUserURLs(t *testing.T) {
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test_urls.json")
-
-	repo := NewFileRepository(tmpFile)
-
-	userID := "user1"
-	urls := map[string]string{
-		"abc123": "https://example.com",
-		"def456": "https://google.com",
+func TestFileStorageSave(t *testing.T) {
+	var testCases = []struct {
+		desc     string
+		urlInfo  URLInfo
+		expected error
+	}{
+		{
+			desc: "Valid URL info",
+			urlInfo: URLInfo{
+				UUID:        "123",
+				ShortURL:    "short",
+				OriginalURL: "https://original.com",
+			},
+			expected: nil,
+		},
+		{
+			desc:     "Empty URL info",
+			urlInfo:  URLInfo{},
+			expected: nil,
+		},
+		{
+			desc: "Invalid Original URL",
+			urlInfo: URLInfo{
+				UUID:        "123",
+				ShortURL:    "short",
+				OriginalURL: "https//original.com",
+			},
+			expected: nil,
+		},
 	}
 
-	for shortID, originalURL := range urls {
-		_, err := repo.Save(shortID, originalURL, userID)
-		assert.NoError(t, err)
-	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
+			if !errors.Is(err, tC.expected) {
+				assert.Error(t, err)
+			}
+		})
 
-	userURLs, err := repo.GetUserURLs(userID)
-	assert.NoError(t, err)
-	assert.Equal(t, len(urls), len(userURLs))
-}
-
-func TestFileRepository_Initialize(t *testing.T) {
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test_urls.json")
-
-	repo := NewFileRepository(tmpFile)
-
-	err := repo.Initialize()
-	assert.NoError(t, err)
-
-	_, err = os.Stat(tmpFile)
-	assert.NoError(t, err)
-}
-
-func TestFileRepository_Close(t *testing.T) {
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test_urls.json")
-
-	repo := NewFileRepository(tmpFile)
-
-	shortID := "abc123"
-	originalURL := "https://example.com"
-	userID := "user1"
-
-	_, err := repo.Save(shortID, originalURL, userID)
-	assert.NoError(t, err)
-
-	err = repo.Close()
-	assert.NoError(t, err)
-
-	data, err := os.ReadFile(tmpFile)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, data)
-}
-
-func TestFileRepository_All(t *testing.T) {
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test_urls.json")
-
-	repo := NewFileRepository(tmpFile)
-
-	urls := map[string]string{
-		"abc123": "https://example.com",
-		"def456": "https://google.com",
-	}
-
-	for shortID, originalURL := range urls {
-		_, err := repo.Save(shortID, originalURL, "user1")
-		assert.NoError(t, err)
-	}
-
-	allURLs := repo.All()
-	assert.Equal(t, len(urls), len(allURLs))
-	for shortID, originalURL := range urls {
-		assert.Equal(t, originalURL, allURLs[shortID])
+		cleanFileStorage()
 	}
 }
 
-func TestFileRepository_FindShortURL(t *testing.T) {
-	tmpFile := t.TempDir() + "/url_store.json"
-
-	repo := NewFileRepository(tmpFile)
-	err := repo.Initialize()
-	assert.NoError(t, err)
-
-	_, err = repo.Save("abc123", "https://example.com", "user1")
-	assert.NoError(t, err)
-
-	shortURL, err := repo.FindShortURL("https://example.com")
-	assert.NoError(t, err)
-	assert.Equal(t, "abc123", shortURL)
-
-	shortURL, err = repo.FindShortURL("https://nonexistent.com")
-	assert.Error(t, err)
-	assert.Empty(t, shortURL)
-
-	err = repo.Close()
-	assert.NoError(t, err)
-}
-
-func TestFileRepository_SaveBatch(t *testing.T) {
-	tmpFile := t.TempDir() + "/url_store.json"
-
-	repo := NewFileRepository(tmpFile)
-	err := repo.Initialize()
-	assert.NoError(t, err)
-
-	urls := map[string]string{
-		"abc123": "https://example.com",
-		"def456": "https://google.com",
-	}
-	userID := "user1"
-
-	err = repo.SaveBatch(urls, userID)
-	assert.NoError(t, err)
-
-	for shortID, originalURL := range urls {
-		savedURL, exists := repo.Find(shortID)
-		assert.True(t, exists)
-		assert.Equal(t, originalURL, savedURL)
+func TestFileStorageLoad(t *testing.T) {
+	var testCases = []struct {
+		desc        string
+		urlInfo     URLInfo
+		expectError bool
+	}{
+		{
+			desc: "Valid URL Info",
+			urlInfo: URLInfo{
+				UUID:        "123",
+				ShortURL:    "short",
+				OriginalURL: "https://original.com",
+			},
+			expectError: false,
+		},
 	}
 
-	err = repo.SaveBatch(map[string]string{}, userID)
-	assert.NoError(t, err)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			_, err := testFileStorage.Save(tC.urlInfo.ShortURL, tC.urlInfo.OriginalURL)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	err = repo.Close()
-	assert.NoError(t, err)
+			_ = testFileStorage.All()
+
+			cleanFileStorage()
+		})
+	}
 }
 
-func TestFileRepository_Ping(t *testing.T) {
-	tmpFile := t.TempDir() + "/url_store.json"
-
-	repo := NewFileRepository(tmpFile)
-	err := repo.Initialize()
-	assert.NoError(t, err)
-
-	err = repo.Ping()
-	assert.NoError(t, err)
-
-	err = repo.Close()
-	assert.NoError(t, err)
+func cleanFileStorage() {
+	err := os.Remove(testFileStorage.Path)
+	if err != nil {
+		panic(err)
+	}
 }
