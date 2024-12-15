@@ -4,19 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"sync"
 )
 
 type PostgresRepository struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
+	mu   sync.RWMutex
 }
 
-func NewPostgresRepository(conn *pgx.Conn) (*PostgresRepository, error) {
+func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
 	repo := &PostgresRepository{
-		conn: conn,
+		pool: pool,
 	}
 
-	_, err := conn.Exec(`
+	_, err := pool.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS urls (
 			id SERIAL PRIMARY KEY,
 			short_url VARCHAR(255) UNIQUE NOT NULL,
@@ -34,8 +36,11 @@ func NewPostgresRepository(conn *pgx.Conn) (*PostgresRepository, error) {
 }
 
 func (r *PostgresRepository) All() map[string]string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	urls := make(map[string]string)
-	rows, err := r.conn.Query("SELECT short_url, original_url FROM urls")
+	rows, err := r.pool.Query(context.Background(), "SELECT short_url, original_url FROM urls")
 	if err != nil {
 		return urls
 	}
@@ -53,20 +58,26 @@ func (r *PostgresRepository) All() map[string]string {
 }
 
 func (r *PostgresRepository) Find(key string) (string, bool, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	var originalURL string
 	var isDeleted bool
-	
-	err := r.conn.QueryRow("SELECT original_url, is_deleted FROM urls WHERE short_url = $1", key).Scan(&originalURL, &isDeleted)
+
+	err := r.pool.QueryRow(context.Background(), "SELECT original_url, is_deleted FROM urls WHERE short_url = $1", key).Scan(&originalURL, &isDeleted)
 	if err != nil {
 		return "", false, false
 	}
-	
+
 	return originalURL, true, isDeleted
 }
 
 func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	var shortURL string
-	err := r.conn.QueryRow("SELECT short_url FROM urls WHERE original_url = $1", originalURL).Scan(&shortURL)
+	err := r.pool.QueryRow(context.Background(), "SELECT short_url FROM urls WHERE original_url = $1", originalURL).Scan(&shortURL)
 	if err != nil {
 		return "", fmt.Errorf("original URL not found")
 	}
@@ -74,7 +85,10 @@ func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
 }
 
 func (r *PostgresRepository) Save(key, value string, userID string) (string, error) {
-	_, err := r.conn.Exec(`
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, err := r.pool.Exec(context.Background(), `
 		INSERT INTO urls (short_url, original_url, user_id)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (short_url) DO NOTHING
@@ -86,71 +100,94 @@ func (r *PostgresRepository) Save(key, value string, userID string) (string, err
 }
 
 func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) error {
-	tx, err := r.conn.Begin()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	tx, err := r.pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func(tx *pgx.Tx) {
-		_ = tx.Rollback()
-	}(tx)
+	defer tx.Rollback(context.Background())
 
 	for shortURL, originalURL := range urls {
-		_, err = tx.Exec(`
+		_, err = tx.Exec(context.Background(), `
 			INSERT INTO urls (short_url, original_url, user_id)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (short_url) DO NOTHING
 		`, shortURL, originalURL, userID)
 		if err != nil {
-			return fmt.Errorf("failed to execute statement: %w", err)
+			return fmt.Errorf("failed to save URL in batch: %w", err)
 		}
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(context.Background()); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (r *PostgresRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
-	query := `
-		UPDATE urls 
-		SET is_deleted = TRUE 
-		WHERE short_url = ANY($1) AND user_id = $2
-	`
-	
-	_, err := r.conn.Exec(query, shortURLs, userID)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	tx, err := r.pool.Begin(context.Background())
 	if err != nil {
-		return fmt.Errorf("failed to mark URLs as deleted: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	
+	defer tx.Rollback(context.Background())
+
+	for _, shortURL := range shortURLs {
+		_, err = tx.Exec(context.Background(), `
+			UPDATE urls 
+			SET is_deleted = true 
+			WHERE short_url = $1 AND user_id = $2
+		`, shortURL, userID)
+		if err != nil {
+			return fmt.Errorf("failed to mark URLs as deleted: %w", err)
+		}
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
 
 func (r *PostgresRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
-	rows, err := r.conn.Query("SELECT short_url, original_url FROM urls WHERE user_id = $1", userID)
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	rows, err := r.pool.Query(context.Background(), `
+		SELECT short_url, original_url 
+		FROM urls 
+		WHERE user_id = $1
+	`, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query user URLs: %w", err)
+		return nil, fmt.Errorf("failed to get user URLs: %w", err)
 	}
 	defer rows.Close()
 
-	var userURLs []models.URLPair
+	var urls []models.URLPair
 	for rows.Next() {
 		var pair models.URLPair
 		if err := rows.Scan(&pair.ShortURL, &pair.OriginalURL); err != nil {
 			return nil, fmt.Errorf("failed to scan URL pair: %w", err)
 		}
-		userURLs = append(userURLs, pair)
+		urls = append(urls, pair)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
-	}
-
-	return userURLs, nil
+	return urls, nil
 }
 
 func (r *PostgresRepository) Ping() error {
-	ctx := context.Background()
-	return r.conn.Ping(ctx)
+	return r.pool.Ping(context.Background())
 }
 
 func (r *PostgresRepository) Close() error {
-	return r.conn.Close()
+	if r.pool != nil {
+		r.pool.Close()
+	}
+	return nil
 }
