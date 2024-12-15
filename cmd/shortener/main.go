@@ -7,6 +7,13 @@ import (
 	"github.com/Gerfey/shortener/internal/pkg/app"
 	"github.com/sirupsen/logrus"
 	"os"
+	"os/signal"
+	"syscall"
+)
+
+var (
+	testMode   = false
+	testDoneCh = make(chan struct{})
 )
 
 func main() {
@@ -34,5 +41,20 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	application.Run()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		application.Run()
+	}()
+
+	select {
+	case <-sigChan:
+		logrus.Info("Получен сигнал завершения")
+	case <-testDoneCh:
+		if testMode {
+			logrus.Info("Завершение в тестовом режиме")
+			return
+		}
+	}
 }

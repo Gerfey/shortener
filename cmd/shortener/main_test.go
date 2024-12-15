@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestInitializeStorageStrategy(t *testing.T) {
@@ -151,6 +152,64 @@ func TestMainWithDifferentFlags(t *testing.T) {
 				assert.Equal(t, "/tmp/urls.json", flags.FlagDefaultFilePath)
 				assert.Equal(t, "postgres://test:test@localhost:5432/test", flags.FlagDefaultDatabaseDSN)
 			}
+		})
+	}
+}
+
+func TestMain(t *testing.T) {
+	origArgs := os.Args
+	origTestMode := testMode
+	defer func() {
+		os.Args = origArgs
+		testMode = origTestMode
+	}()
+
+	testCases := []struct {
+		name    string
+		args    []string
+		envVars map[string]string
+	}{
+		{
+			name: "Default configuration",
+			args: []string{"shortener"},
+			envVars: map[string]string{
+				"SERVER_ADDRESS":    ":8080",
+				"BASE_URL":          "http://localhost:8080",
+				"FILE_STORAGE_PATH": "",
+				"DATABASE_DSN":      "",
+			},
+		},
+		{
+			name: "With file storage",
+			args: []string{"shortener", "-f", "/tmp/test.json"},
+			envVars: map[string]string{
+				"SERVER_ADDRESS":    ":8081",
+				"BASE_URL":          "http://localhost:8081",
+				"FILE_STORAGE_PATH": "/tmp/test.json",
+				"DATABASE_DSN":      "",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testDoneCh = make(chan struct{})
+			testMode = true
+
+			for k, v := range tc.envVars {
+				os.Setenv(k, v)
+				defer os.Unsetenv(k)
+			}
+
+			os.Args = tc.args
+
+			go main()
+
+			time.Sleep(100 * time.Millisecond)
+
+			close(testDoneCh)
+
+			time.Sleep(50 * time.Millisecond)
 		})
 	}
 }
