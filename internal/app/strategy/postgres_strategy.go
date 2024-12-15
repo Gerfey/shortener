@@ -29,22 +29,14 @@ func (s *PostgresStrategy) Initialize() (models.Repository, error) {
 
 	s.connection = conn
 
-	query := `
-	CREATE TABLE IF NOT EXISTS urls (
-		id SERIAL PRIMARY KEY,
-		short_url VARCHAR(255) UNIQUE NOT NULL,
-		original_url TEXT UNIQUE NOT NULL
-	)`
-
-	_, err = conn.Exec(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %w", err)
-	}
-
 	return repository.NewPostgresRepository(conn)
 }
 
 func (s *PostgresStrategy) Close() error {
+	if s.connection == nil {
+		return nil
+	}
+	
 	err := s.connection.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close connection: %w", err)

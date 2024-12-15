@@ -6,24 +6,28 @@ import (
 )
 
 type FileStrategy struct {
-	FilePath string
+	filePath     string
+	fileRepo     *repository.FileRepository
 }
 
 func NewFileStrategy(filePath string) *FileStrategy {
-	return &FileStrategy{FilePath: filePath}
+	return &FileStrategy{
+		filePath: filePath,
+	}
 }
 
 func (s *FileStrategy) Initialize() (models.Repository, error) {
-	fileRepository := repository.NewFileRepository(s.FilePath)
-
-	err := fileRepository.Load()
-	if err != nil {
+	fileRepository := repository.NewFileRepository(s.filePath)
+	if err := fileRepository.Initialize(); err != nil {
 		return nil, err
 	}
-
+	s.fileRepo = fileRepository
 	return fileRepository, nil
 }
 
 func (s *FileStrategy) Close() error {
+	if s.fileRepo != nil {
+		return s.fileRepo.Close()
+	}
 	return nil
 }
