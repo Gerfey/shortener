@@ -45,7 +45,7 @@ func (s *ShortenerService) ShortenID(url string, userID string) (string, error) 
 }
 
 func (s *ShortenerService) FindURL(code string) (string, error) {
-	url, exists := s.repository.Find(code)
+	url, exists, _ := s.repository.Find(code)
 	if !exists {
 		return "", fmt.Errorf("ничего не найдено по значению %v", code)
 	}

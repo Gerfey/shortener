@@ -22,6 +22,7 @@ func NewPostgresRepository(conn *pgx.Conn) (*PostgresRepository, error) {
 			short_url VARCHAR(255) UNIQUE NOT NULL,
 			original_url TEXT NOT NULL,
 			user_id VARCHAR(255),
+			is_deleted BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
@@ -51,13 +52,16 @@ func (r *PostgresRepository) All() map[string]string {
 	return urls
 }
 
-func (r *PostgresRepository) Find(key string) (string, bool) {
+func (r *PostgresRepository) Find(key string) (string, bool, bool) {
 	var originalURL string
-	err := r.conn.QueryRow("SELECT original_url FROM urls WHERE short_url = $1", key).Scan(&originalURL)
+	var isDeleted bool
+	
+	err := r.conn.QueryRow("SELECT original_url, is_deleted FROM urls WHERE short_url = $1", key).Scan(&originalURL, &isDeleted)
 	if err != nil {
-		return "", false
+		return "", false, false
 	}
-	return originalURL, true
+	
+	return originalURL, true, isDeleted
 }
 
 func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
@@ -102,6 +106,21 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) er
 	}
 
 	return tx.Commit()
+}
+
+func (r *PostgresRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+	query := `
+		UPDATE urls 
+		SET is_deleted = TRUE 
+		WHERE short_url = ANY($1) AND user_id = $2
+	`
+	
+	_, err := r.conn.Exec(query, shortURLs, userID)
+	if err != nil {
+		return fmt.Errorf("failed to mark URLs as deleted: %w", err)
+	}
+	
+	return nil
 }
 
 func (r *PostgresRepository) GetUserURLs(userID string) ([]models.URLPair, error) {

@@ -3,14 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx"
-	"io"
-	"net/http"
 )
 
 const (
@@ -123,9 +124,14 @@ func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	originalURL, found := h.repository.Find(id)
+	originalURL, found, isDeleted := h.repository.Find(id)
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if isDeleted {
+		w.WriteHeader(http.StatusGone)
 		return
 	}
 
@@ -325,4 +331,33 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+}
+
+func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil || cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var shortURLs []string
+	if err := json.Unmarshal(body, &shortURLs); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	go func() {
+		if err := h.repository.DeleteUserURLsBatch(shortURLs, cookie.Value); err != nil {
+			fmt.Printf("Error deleting URLs: %v\n", err)
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
 }

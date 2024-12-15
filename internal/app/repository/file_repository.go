@@ -79,14 +79,14 @@ func (fs *FileRepository) SaveBatch(urls map[string]string, userID string) error
 	return nil
 }
 
-func (fs *FileRepository) Find(key string) (string, bool) {
+func (fs *FileRepository) Find(key string) (string, bool, bool) {
 	fs.Lock()
 	defer fs.Unlock()
 
 	if urlInfo, ok := fs.data[key]; ok {
-		return urlInfo.OriginalURL, true
+		return urlInfo.OriginalURL, true, urlInfo.IsDeleted
 	}
-	return "", false
+	return "", false, false
 }
 
 func (fs *FileRepository) FindShortURL(originalURL string) (string, error) {
@@ -126,6 +126,21 @@ func (fs *FileRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
 		}
 	}
 	return userURLs, nil
+}
+
+func (fs *FileRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+	fs.Lock()
+
+	for _, shortURL := range shortURLs {
+		if urlInfo, exists := fs.data[shortURL]; exists && urlInfo.UserID == userID {
+			urlInfo.IsDeleted = true
+			fs.data[shortURL] = urlInfo
+		}
+	}
+
+	fs.Unlock()
+
+	return fs.Close()
 }
 
 func (fs *FileRepository) Ping() error {

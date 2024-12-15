@@ -29,14 +29,14 @@ func (r *MemoryRepository) All() map[string]string {
 	return result
 }
 
-func (r *MemoryRepository) Find(key string) (string, bool) {
+func (r *MemoryRepository) Find(key string) (string, bool, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	if urlInfo, ok := r.urls[key]; ok {
-		return urlInfo.OriginalURL, true
+		return urlInfo.OriginalURL, true, urlInfo.IsDeleted
 	}
-	return "", false
+	return "", false, false
 }
 
 func (r *MemoryRepository) FindShortURL(originalURL string) (string, error) {
@@ -91,6 +91,19 @@ func (r *MemoryRepository) GetUserURLs(userID string) ([]models.URLPair, error) 
 		}
 	}
 	return userURLs, nil
+}
+
+func (r *MemoryRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, shortURL := range shortURLs {
+		if urlInfo, exists := r.urls[shortURL]; exists && urlInfo.UserID == userID {
+			urlInfo.IsDeleted = true
+			r.urls[shortURL] = urlInfo
+		}
+	}
+	return nil
 }
 
 func (r *MemoryRepository) Ping() error {
