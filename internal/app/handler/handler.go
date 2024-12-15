@@ -97,6 +97,14 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 
 	shortURL, err := h.shortener.ShortenID(originalURL, cookie.Value)
 	if err != nil {
+		if err == models.ErrURLExists {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict)
+			if _, err := w.Write([]byte(h.settings.ShortenerServerAddress() + "/" + shortURL)); err != nil {
+				fmt.Printf("error writing response: %v\n", err)
+			}
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -155,6 +163,19 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	shortURL, err := h.shortener.ShortenID(request.URL, cookie.Value)
 	if err != nil {
+		if err == models.ErrURLExists {
+			response := struct {
+				Result string `json:"result"`
+			}{
+				Result: h.settings.ShortenerServerAddress() + "/" + shortURL,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				fmt.Printf("error encoding response: %v\n", err)
+			}
+			return
+		}
 		if err == pgx.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			return

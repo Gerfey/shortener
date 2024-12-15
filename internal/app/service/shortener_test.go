@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"github.com/Gerfey/shortener/internal/mock"
+	"github.com/Gerfey/shortener/internal/models"
 	"go.uber.org/mock/gomock"
 	"testing"
 
@@ -20,7 +21,8 @@ func TestShortenSuccess(t *testing.T) {
 	originalURL := "https://example.com"
 	userID := "user123"
 
-	mockRepo.EXPECT().Save(gomock.Any(), originalURL, userID).Return(shortID, nil).Times(1)
+	mockRepo.EXPECT().FindShortURL(originalURL).Return("", models.ErrURLNotFound)
+	mockRepo.EXPECT().Save(gomock.Any(), originalURL, userID).Return(shortID, nil)
 
 	id, err := shortener.ShortenID(originalURL, userID)
 	assert.NoError(t, err)
@@ -37,13 +39,13 @@ func TestFindURLSuccess(t *testing.T) {
 	shortID := "s65fg"
 	originalURL := "https://example.com"
 
-	mockRepo.EXPECT().Find(shortID).Return(originalURL, true).Times(1)
+	mockRepo.EXPECT().Find(shortID).Return(originalURL, true)
 
 	url, err := shortener.FindURL(shortID)
 	assert.NoError(t, err)
 	assert.Equal(t, originalURL, url)
 
-	mockRepo.EXPECT().Find("notfound").Return("", false).Times(1)
+	mockRepo.EXPECT().Find("notfound").Return("", false)
 
 	_, err = shortener.FindURL("notfound")
 	assert.Error(t, err)
@@ -60,9 +62,28 @@ func TestShortenerService_ShortenID_Error(t *testing.T) {
 	userID := "user123"
 	expectedErr := errors.New("repository error")
 
-	mockRepo.EXPECT().Save(gomock.Any(), originalURL, userID).Return("", expectedErr).Times(1)
+	mockRepo.EXPECT().FindShortURL(originalURL).Return("", models.ErrURLNotFound)
+	mockRepo.EXPECT().Save(gomock.Any(), originalURL, userID).Return("", expectedErr)
 
 	_, err := shortener.ShortenID(originalURL, userID)
 	assert.Error(t, err)
 	assert.Equal(t, expectedErr, err)
+}
+
+func TestShortenerService_ShortenID_URLExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mock.NewMockRepository(ctrl)
+	shortener := NewShortenerService(mockRepo)
+
+	originalURL := "https://example.com"
+	userID := "user123"
+	existingShortURL := "abc123"
+
+	mockRepo.EXPECT().FindShortURL(originalURL).Return(existingShortURL, nil)
+
+	shortURL, err := shortener.ShortenID(originalURL, userID)
+	assert.Equal(t, models.ErrURLExists, err)
+	assert.Equal(t, existingShortURL, shortURL)
 }

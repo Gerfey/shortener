@@ -64,11 +64,16 @@ func (m *MockRepository) FindShortURL(originalURL string) (string, error) {
 			return shortURL, nil
 		}
 	}
-	return "", nil
+	return "", models.ErrURLNotFound
 }
 
 func (m *MockRepository) Ping() error {
 	return nil
+}
+
+func (m *MockRepository) Clear() {
+	m.urls = make(map[string]string)
+	m.userURLs = make(map[string][]models.URLPair)
 }
 
 func TestURLHandler_GetUserURLsHandler(t *testing.T) {
@@ -182,6 +187,7 @@ func TestURLHandler_ShortenHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockRepo.Clear()
 			reqBody := []byte(tt.requestURL)
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
 			req.AddCookie(&http.Cookie{Name: "user_id", Value: "test_user"})
@@ -197,6 +203,34 @@ func TestURLHandler_ShortenHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestURLHandler_ShortenHandler_Conflict(t *testing.T) {
+	mockRepo := NewMockRepository()
+	shortenerService := service.NewShortenerService(mockRepo)
+	appSettings := settings.NewSettings(settings.ServerSettings{
+		ServerRunAddress:       "localhost:8080",
+		ServerShortenerAddress: "http://localhost:8080",
+	})
+	urlService := service.NewURLService(appSettings)
+	handler := NewURLHandler(shortenerService, urlService, appSettings, mockRepo)
+
+	originalURL := "http://example.com"
+	firstReq := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(originalURL))
+	firstReq.AddCookie(&http.Cookie{Name: "user_id", Value: "test_user"})
+	firstRR := httptest.NewRecorder()
+	handler.ShortenHandler(firstRR, firstReq)
+
+	assert.Equal(t, http.StatusCreated, firstRR.Code)
+	firstResponse := firstRR.Body.String()
+
+	secondReq := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(originalURL))
+	secondReq.AddCookie(&http.Cookie{Name: "user_id", Value: "test_user"})
+	secondRR := httptest.NewRecorder()
+	handler.ShortenHandler(secondRR, secondReq)
+
+	assert.Equal(t, http.StatusConflict, secondRR.Code)
+	assert.Equal(t, firstResponse, secondRR.Body.String())
 }
 
 func TestURLHandler_ShortenJSONHandler(t *testing.T) {
@@ -241,6 +275,7 @@ func TestURLHandler_ShortenJSONHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockRepo.Clear()
 			var reqBody []byte
 			var err error
 
@@ -271,6 +306,52 @@ func TestURLHandler_ShortenJSONHandler(t *testing.T) {
 	}
 }
 
+func TestURLHandler_ShortenJSONHandler_Conflict(t *testing.T) {
+	mockRepo := NewMockRepository()
+	shortenerService := service.NewShortenerService(mockRepo)
+	appSettings := settings.NewSettings(settings.ServerSettings{
+		ServerRunAddress:       "localhost:8080",
+		ServerShortenerAddress: "http://localhost:8080",
+	})
+	urlService := service.NewURLService(appSettings)
+	handler := NewURLHandler(shortenerService, urlService, appSettings, mockRepo)
+
+	originalURL := "http://example.com"
+	requestBody := struct {
+		URL string `json:"url"`
+	}{
+		URL: originalURL,
+	}
+
+	firstReqBody, _ := json.Marshal(requestBody)
+	firstReq := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(firstReqBody))
+	firstReq.Header.Set("Content-Type", "application/json")
+	firstReq.AddCookie(&http.Cookie{Name: "user_id", Value: "test_user"})
+	firstRR := httptest.NewRecorder()
+	handler.ShortenJSONHandler(firstRR, firstReq)
+
+	assert.Equal(t, http.StatusCreated, firstRR.Code)
+	var firstResponse struct {
+		Result string `json:"result"`
+	}
+	err := json.NewDecoder(firstRR.Body).Decode(&firstResponse)
+	require.NoError(t, err)
+
+	secondReq := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(firstReqBody))
+	secondReq.Header.Set("Content-Type", "application/json")
+	secondReq.AddCookie(&http.Cookie{Name: "user_id", Value: "test_user"})
+	secondRR := httptest.NewRecorder()
+	handler.ShortenJSONHandler(secondRR, secondReq)
+
+	assert.Equal(t, http.StatusConflict, secondRR.Code)
+	var secondResponse struct {
+		Result string `json:"result"`
+	}
+	err = json.NewDecoder(secondRR.Body).Decode(&secondResponse)
+	require.NoError(t, err)
+	assert.Equal(t, firstResponse.Result, secondResponse.Result)
+}
+
 func TestURLHandler_ShortenBatchHandler(t *testing.T) {
 	mockRepo := NewMockRepository()
 	shortenerService := service.NewShortenerService(mockRepo)
@@ -282,29 +363,35 @@ func TestURLHandler_ShortenBatchHandler(t *testing.T) {
 	handler := NewURLHandler(shortenerService, urlService, appSettings, mockRepo)
 
 	tests := []struct {
-		name           string
-		requestBody    []models.BatchRequestItem
+		name        string
+		requestBody []struct {
+			CorrelationID string `json:"correlation_id"`
+			OriginalURL   string `json:"original_url"`
+		}
 		expectedStatus int
 		expectedError  bool
 	}{
 		{
 			name: "Valid URLs",
-			requestBody: []models.BatchRequestItem{
+			requestBody: []struct {
+				CorrelationID string `json:"correlation_id"`
+				OriginalURL   string `json:"original_url"`
+			}{
 				{
 					CorrelationID: "1",
-					OriginalURL:   "http://example1.com",
+					OriginalURL:   "http://example.com/1",
 				},
 				{
 					CorrelationID: "2",
-					OriginalURL:   "http://example2.com",
+					OriginalURL:   "http://example.com/2",
 				},
 			},
 			expectedStatus: http.StatusCreated,
 			expectedError:  false,
 		},
 		{
-			name:           "Empty request",
-			requestBody:    []models.BatchRequestItem{},
+			name:           "Empty Request",
+			requestBody:    nil,
 			expectedStatus: http.StatusBadRequest,
 			expectedError:  true,
 		},
@@ -312,8 +399,16 @@ func TestURLHandler_ShortenBatchHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reqBody, err := json.Marshal(tt.requestBody)
-			require.NoError(t, err)
+			mockRepo.Clear()
+			var reqBody []byte
+			var err error
+
+			if tt.requestBody != nil {
+				reqBody, err = json.Marshal(tt.requestBody)
+				require.NoError(t, err)
+			} else {
+				reqBody = []byte("[]")
+			}
 
 			req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
@@ -326,12 +421,16 @@ func TestURLHandler_ShortenBatchHandler(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
 			if !tt.expectedError {
-				var response []models.BatchResponseItem
+				var response []struct {
+					CorrelationID string `json:"correlation_id"`
+					ShortURL      string `json:"short_url"`
+				}
 				err = json.NewDecoder(rr.Body).Decode(&response)
 				require.NoError(t, err)
-				assert.Equal(t, len(tt.requestBody), len(response))
+				assert.Len(t, response, len(tt.requestBody))
 				for _, resp := range response {
 					assert.NotEmpty(t, resp.ShortURL)
+					assert.NotEmpty(t, resp.CorrelationID)
 				}
 			}
 		})

@@ -30,9 +30,13 @@ func (s *ShortenerService) GetShortURL(originalURL string) (string, error) {
 }
 
 func (s *ShortenerService) ShortenID(url string, userID string) (string, error) {
-	shortID := generateShortID(lenShortID)
+	existingShortURL, err := s.repository.FindShortURL(url)
+	if err == nil {
+		return existingShortURL, models.ErrURLExists
+	}
 
-	shortID, err := s.repository.Save(shortID, url, userID)
+	shortID := generateShortID(lenShortID)
+	shortID, err = s.repository.Save(shortID, url, userID)
 	if err != nil {
 		return shortID, err
 	}
