@@ -54,13 +54,28 @@ func (mr *MockRepositoryMockRecorder) All() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepository)(nil).All))
 }
 
+// DeleteUserURLsBatch mocks base method.
+func (m *MockRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserURLsBatch", shortURLs, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserURLsBatch indicates an expected call of DeleteUserURLsBatch.
+func (mr *MockRepositoryMockRecorder) DeleteUserURLsBatch(shortURLs, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLsBatch", reflect.TypeOf((*MockRepository)(nil).DeleteUserURLsBatch), shortURLs, userID)
+}
+
 // Find mocks base method.
-func (m *MockRepository) Find(key string) (string, bool) {
+func (m *MockRepository) Find(key string) (string, bool, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Find", key)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
 }
 
 // Find indicates an expected call of Find.

@@ -39,13 +39,13 @@ func TestFindURLSuccess(t *testing.T) {
 	shortID := "s65fg"
 	originalURL := "https://example.com"
 
-	mockRepo.EXPECT().Find(shortID).Return(originalURL, true)
+	mockRepo.EXPECT().Find(shortID).Return(originalURL, true, false)
 
 	url, err := shortener.FindURL(shortID)
 	assert.NoError(t, err)
 	assert.Equal(t, originalURL, url)
 
-	mockRepo.EXPECT().Find("notfound").Return("", false)
+	mockRepo.EXPECT().Find("notfound").Return("", false, false)
 
 	_, err = shortener.FindURL("notfound")
 	assert.Error(t, err)

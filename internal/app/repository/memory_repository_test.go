@@ -13,20 +13,24 @@ func TestMemoryRepository_Find(t *testing.T) {
 		"abc123": {
 			OriginalURL: "https://example.com",
 			UserID:      "user1",
+			IsDeleted:   false,
 		},
 		"def456": {
 			OriginalURL: "https://google.com",
 			UserID:      "user1",
+			IsDeleted:   false,
 		},
 	}
 	repo.urls = urls
 
-	url, exists := repo.Find("abc123")
+	url, exists, isDeleted := repo.Find("abc123")
 	assert.True(t, exists)
+	assert.False(t, isDeleted)
 	assert.Equal(t, "https://example.com", url)
 
-	url, exists = repo.Find("nonexistent")
+	url, exists, isDeleted = repo.Find("nonexistent")
 	assert.False(t, exists)
+	assert.False(t, isDeleted)
 	assert.Empty(t, url)
 }
 
@@ -148,4 +152,58 @@ func TestMemoryRepository_Ping(t *testing.T) {
 
 	err := repo.Ping()
 	assert.NoError(t, err)
+}
+
+func TestMemoryRepository_DeleteUserURLsBatch(t *testing.T) {
+	repo := NewMemoryRepository()
+
+	urls := []struct {
+		shortURL    string
+		originalURL string
+		userID      string
+	}{
+		{"abc123", "http://example1.com", "user1"},
+		{"def456", "http://example2.com", "user1"},
+		{"ghi789", "http://example3.com", "user2"},
+	}
+
+	for _, u := range urls {
+		repo.Save(u.shortURL, u.originalURL, u.userID)
+	}
+
+	err := repo.DeleteUserURLsBatch([]string{"abc123", "def456"}, "user1")
+	assert.NoError(t, err)
+
+	_, _, isDeleted1 := repo.Find("abc123")
+	assert.True(t, isDeleted1, "URL abc123 should be marked as deleted")
+	_, _, isDeleted2 := repo.Find("def456")
+	assert.True(t, isDeleted2, "URL def456 should be marked as deleted")
+
+	err = repo.DeleteUserURLsBatch([]string{"ghi789"}, "user1")
+	assert.NoError(t, err)
+
+	_, _, isDeleted3 := repo.Find("ghi789")
+	assert.False(t, isDeleted3, "URL ghi789 should not be marked as deleted")
+
+	err = repo.DeleteUserURLsBatch([]string{"nonexistent"}, "user1")
+	assert.NoError(t, err)
+}
+
+func TestMemoryRepository_Find_WithDeletedURLs(t *testing.T) {
+	repo := NewMemoryRepository()
+
+	repo.Save("test123", "http://example.com", "user1")
+
+	originalURL, exists, isDeleted := repo.Find("test123")
+	assert.True(t, exists)
+	assert.False(t, isDeleted)
+	assert.Equal(t, "http://example.com", originalURL)
+
+	err := repo.DeleteUserURLsBatch([]string{"test123"}, "user1")
+	assert.NoError(t, err)
+
+	originalURL, exists, isDeleted = repo.Find("test123")
+	assert.True(t, exists)
+	assert.True(t, isDeleted)
+	assert.Equal(t, "http://example.com", originalURL)
 }

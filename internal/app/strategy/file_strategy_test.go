@@ -13,8 +13,8 @@ func TestFileStrategy_Initialize(t *testing.T) {
 	tmpFile := filepath.Join(tmpDir, "url_store.json")
 
 	testData := `{
-		"abc123": {"original_url": "https://example.com", "user_id": "user1"},
-		"def456": {"original_url": "https://google.com", "user_id": "user1"}
+		"abc123": {"original_url": "https://example.com", "user_id": "user1", "is_deleted": false},
+		"def456": {"original_url": "https://google.com", "user_id": "user1", "is_deleted": false}
 	}`
 
 	err := os.WriteFile(tmpFile, []byte(testData), 0644)
@@ -26,8 +26,9 @@ func TestFileStrategy_Initialize(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
-	url, exists := repo.Find("abc123")
+	url, exists, isDeleted := repo.Find("abc123")
 	assert.True(t, exists)
+	assert.False(t, isDeleted)
 	assert.Equal(t, "https://example.com", url)
 }
 

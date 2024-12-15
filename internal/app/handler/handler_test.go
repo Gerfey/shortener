@@ -15,32 +15,48 @@ import (
 	"net/http/httptest"
 	"sort"
 	"testing"
+	"time"
 )
 
 type MockRepository struct {
-	urls     map[string]string
+	urls     map[string]models.URLInfo
 	userURLs map[string][]models.URLPair
 }
 
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		urls:     make(map[string]string),
+		urls:     make(map[string]models.URLInfo),
 		userURLs: make(map[string][]models.URLPair),
 	}
 }
 
 func (m *MockRepository) Save(shortURL, originalURL, userID string) (string, error) {
-	m.urls[shortURL] = originalURL
+	m.urls[shortURL] = models.URLInfo{
+		UUID:        "test-uuid",
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+		UserID:      userID,
+		IsDeleted:   false,
+	}
 	return shortURL, nil
 }
 
-func (m *MockRepository) Find(shortURL string) (string, bool) {
-	originalURL, exists := m.urls[shortURL]
-	return originalURL, exists
+func (m *MockRepository) Find(shortURL string) (string, bool, bool) {
+	urlInfo, exists := m.urls[shortURL]
+	if !exists {
+		return "", false, false
+	}
+	return urlInfo.OriginalURL, true, urlInfo.IsDeleted
 }
 
 func (m *MockRepository) All() map[string]string {
-	return m.urls
+	result := make(map[string]string)
+	for k, v := range m.urls {
+		if !v.IsDeleted {
+			result[k] = v.OriginalURL
+		}
+	}
+	return result
 }
 
 func (m *MockRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
@@ -53,14 +69,20 @@ func (m *MockRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
 
 func (m *MockRepository) SaveBatch(urls map[string]string, userID string) error {
 	for shortURL, originalURL := range urls {
-		m.urls[shortURL] = originalURL
+		m.urls[shortURL] = models.URLInfo{
+			UUID:        "test-uuid",
+			ShortURL:    shortURL,
+			OriginalURL: originalURL,
+			UserID:      userID,
+			IsDeleted:   false,
+		}
 	}
 	return nil
 }
 
 func (m *MockRepository) FindShortURL(originalURL string) (string, error) {
-	for shortURL, origURL := range m.urls {
-		if origURL == originalURL {
+	for shortURL, urlInfo := range m.urls {
+		if urlInfo.OriginalURL == originalURL {
 			return shortURL, nil
 		}
 	}
@@ -72,8 +94,18 @@ func (m *MockRepository) Ping() error {
 }
 
 func (m *MockRepository) Clear() {
-	m.urls = make(map[string]string)
+	m.urls = make(map[string]models.URLInfo)
 	m.userURLs = make(map[string][]models.URLPair)
+}
+
+func (m *MockRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+	for _, shortURL := range shortURLs {
+		if urlInfo, exists := m.urls[shortURL]; exists && urlInfo.UserID == userID {
+			urlInfo.IsDeleted = true
+			m.urls[shortURL] = urlInfo
+		}
+	}
+	return nil
 }
 
 func TestURLHandler_GetUserURLsHandler(t *testing.T) {
@@ -432,6 +464,122 @@ func TestURLHandler_ShortenBatchHandler(t *testing.T) {
 					assert.NotEmpty(t, resp.ShortURL)
 					assert.NotEmpty(t, resp.CorrelationID)
 				}
+			}
+		})
+	}
+}
+
+func TestURLHandler_DeleteUserURLsHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		userID         string
+		requestBody    string
+		expectedStatus int
+	}{
+		{
+			name:           "successful deletion",
+			userID:         "test-user",
+			requestBody:    `["abc123", "def456"]`,
+			expectedStatus: http.StatusAccepted,
+		},
+		{
+			name:           "unauthorized request",
+			userID:         "",
+			requestBody:    `["abc123"]`,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "invalid json",
+			userID:         "test-user",
+			requestBody:    `invalid json`,
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMockRepository()
+			handler := NewURLHandler(nil, nil, nil, repo)
+
+			repo.Save("abc123", "http://example1.com", "test-user")
+			repo.Save("def456", "http://example2.com", "test-user")
+
+			req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewBufferString(tt.requestBody))
+			if tt.userID != "" {
+				cookie := &http.Cookie{
+					Name:  UserIDCookieName,
+					Value: tt.userID,
+				}
+				req.AddCookie(cookie)
+			}
+
+			w := httptest.NewRecorder()
+			handler.DeleteUserURLsHandler(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.expectedStatus == http.StatusAccepted {
+				time.Sleep(100 * time.Millisecond)
+
+				_, _, isDeleted1 := repo.Find("abc123")
+				_, _, isDeleted2 := repo.Find("def456")
+				assert.True(t, isDeleted1, "URL abc123 should be marked as deleted")
+				assert.True(t, isDeleted2, "URL def456 should be marked as deleted")
+			}
+		})
+	}
+}
+
+func TestURLHandler_RedirectURLHandler_WithDeletedURLs(t *testing.T) {
+	tests := []struct {
+		name           string
+		shortURL       string
+		setupRepo      func(*MockRepository)
+		expectedStatus int
+	}{
+		{
+			name:     "active url",
+			shortURL: "abc123",
+			setupRepo: func(repo *MockRepository) {
+				repo.Save("abc123", "http://example.com", "test-user")
+			},
+			expectedStatus: http.StatusTemporaryRedirect,
+		},
+		{
+			name:     "deleted url",
+			shortURL: "def456",
+			setupRepo: func(repo *MockRepository) {
+				repo.Save("def456", "http://example.com", "test-user")
+				repo.DeleteUserURLsBatch([]string{"def456"}, "test-user")
+			},
+			expectedStatus: http.StatusGone,
+		},
+		{
+			name:           "not found url",
+			shortURL:       "notfound",
+			setupRepo:      func(repo *MockRepository) {},
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMockRepository()
+			tt.setupRepo(repo)
+			handler := NewURLHandler(nil, nil, nil, repo)
+
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.shortURL, nil)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chi.NewRouteContext()))
+			chiCtx := chi.RouteContext(req.Context())
+			chiCtx.URLParams.Add("id", tt.shortURL)
+
+			w := httptest.NewRecorder()
+			handler.RedirectURLHandler(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.expectedStatus == http.StatusTemporaryRedirect {
+				assert.Equal(t, "http://example.com", w.Header().Get("Location"))
 			}
 		})
 	}
