@@ -44,9 +44,7 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		application.Run()
-	}()
+	application.Run()
 
 	select {
 	case <-sigChan:
