@@ -13,18 +13,42 @@ func TestURLServiceShortenerURL(t *testing.T) {
 		address string
 		id      string
 		want    string
+		wantErr bool
 	}{
 		{
 			name:    "valid address",
 			address: "http://localhost:8080",
 			id:      "12345",
 			want:    "http://localhost:8080/12345",
+			wantErr: false,
 		},
 		{
 			name:    "empty id",
 			address: "http://localhost:8080",
 			id:      "",
 			want:    "http://localhost:8080/",
+			wantErr: false,
+		},
+		{
+			name:    "invalid address",
+			address: "://invalid",
+			id:      "12345",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "address with path",
+			address: "http://localhost:8080/api",
+			id:      "12345",
+			want:    "http://localhost:8080/api/12345",
+			wantErr: false,
+		},
+		{
+			name:    "address with query params",
+			address: "http://localhost:8080?version=1",
+			id:      "12345",
+			want:    "http://localhost:8080/12345",
+			wantErr: false,
 		},
 	}
 
@@ -36,9 +60,15 @@ func TestURLServiceShortenerURL(t *testing.T) {
 			})
 
 			urlService := NewURLService(serverSettings)
-			shortenerURL, _ := urlService.ShortenerURL(tt.id)
+			shortenerURL, err := urlService.ShortenerURL(tt.id)
 
-			assert.Equal(t, shortenerURL, tt.want)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Empty(t, shortenerURL)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, shortenerURL)
+			}
 		})
 	}
 }
@@ -103,6 +133,65 @@ func TestURLService_IsValidURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := urlService.IsValidURL(tt.url)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFormatURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Valid URL",
+			url:     "http://example.com",
+			want:    "http://example.com",
+			wantErr: false,
+		},
+		{
+			name:    "URL with path",
+			url:     "http://example.com/path",
+			want:    "http://example.com/path",
+			wantErr: false,
+		},
+		{
+			name:    "URL with query",
+			url:     "http://example.com?param=value",
+			want:    "http://example.com?param=value",
+			wantErr: false,
+		},
+		{
+			name:    "URL with fragment",
+			url:     "http://example.com#section",
+			want:    "http://example.com#section",
+			wantErr: false,
+		},
+		{
+			name:    "Invalid URL",
+			url:     "://invalid",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "Empty URL",
+			url:     "",
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatURL(tt.url)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Empty(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }

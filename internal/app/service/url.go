@@ -21,7 +21,14 @@ func (us *URLService) ShortenerURL(shortenerID string) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%v/%v", urlFormat, shortenerID), nil
+	baseURL, err := url.Parse(urlFormat)
+	if err != nil {
+		return "", err
+	}
+
+	baseURL.RawQuery = ""
+
+	return fmt.Sprintf("%v/%v", baseURL.String(), shortenerID), nil
 }
 
 func (us *URLService) IsValidURL(URL string) bool {
@@ -38,11 +45,14 @@ func (us *URLService) IsValidURL(URL string) bool {
 }
 
 func formatURL(URL string) (string, error) {
-	urlParsed, err := url.Parse(URL)
+	if URL == "" {
+		return "", fmt.Errorf("empty URL")
+	}
 
+	urlParsed, err := url.Parse(URL)
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%v", urlParsed.String()), err
+	return urlParsed.String(), nil
 }
