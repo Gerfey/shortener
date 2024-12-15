@@ -33,6 +33,10 @@ func (s *PostgresStrategy) Initialize() (models.Repository, error) {
 }
 
 func (s *PostgresStrategy) Close() error {
+	if s.connection == nil {
+		return nil
+	}
+	
 	err := s.connection.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close connection: %w", err)

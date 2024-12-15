@@ -23,7 +23,10 @@ func TestAuthMiddleware(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		cookies := rr.Result().Cookies()
+		result := rr.Result()
+		defer result.Body.Close()
+
+		cookies := result.Cookies()
 		assert.Len(t, cookies, 1, "Expected one cookie to be set")
 		assert.Equal(t, "user_id", cookies[0].Name)
 		assert.NotEmpty(t, cookies[0].Value)
@@ -54,7 +57,10 @@ func TestAuthMiddleware(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		cookies := rr.Result().Cookies()
+		result := rr.Result()
+		defer result.Body.Close()
+
+		cookies := result.Cookies()
 		assert.Empty(t, cookies, "Expected no new cookies to be set")
 	})
 }
