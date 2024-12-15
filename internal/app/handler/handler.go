@@ -73,6 +73,12 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	originalURL := string(body)
+	if !h.url.IsValidURL(originalURL) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
 		userID := uuid.New().String()
@@ -85,7 +91,7 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 	}
 
-	shortURL, err := h.shortener.ShortenID(string(body), cookie.Value)
+	shortURL, err := h.shortener.ShortenID(originalURL, cookie.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -174,6 +180,18 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
+	if len(request) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	for _, item := range request {
+		if !h.url.IsValidURL(item.OriginalURL) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
 		userID := uuid.New().String()
@@ -236,7 +254,11 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	bodySaveURL, _ := io.ReadAll(r.Body)
 
-	cookie, _ := r.Cookie(UserIDCookieName)
+	cookie, err := r.Cookie(UserIDCookieName)
+	if err != nil {
+		http.Error(w, "User ID cookie not found", http.StatusInternalServerError)
+		return
+	}
 	userID := cookie.Value
 
 	shortenID, err := h.shortener.ShortenID(string(bodySaveURL), userID)
