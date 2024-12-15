@@ -358,11 +358,19 @@ func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	done := make(chan error, 1)
 	go func() {
-		if err := h.repository.DeleteUserURLsBatch(shortURLs, cookie.Value); err != nil {
+		done <- h.repository.DeleteUserURLsBatch(shortURLs, cookie.Value)
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
 			fmt.Printf("Error deleting URLs: %v\n", err)
 		}
-	}()
+	case <-r.Context().Done():
+		fmt.Printf("Request context cancelled while deleting URLs\n")
+	}
 
 	w.WriteHeader(http.StatusAccepted)
 }
