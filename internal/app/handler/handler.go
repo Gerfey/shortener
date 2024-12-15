@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
@@ -57,7 +58,10 @@ func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(urls)
+	if err := json.NewEncoder(w).Encode(urls); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +103,9 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.settings.ShortenerServerAddress() + "/" + shortURL))
+	if _, err := w.Write([]byte(h.settings.ShortenerServerAddress() + "/" + shortURL)); err != nil {
+		fmt.Printf("error writing response: %v\n", err)
+	}
 }
 
 func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +171,9 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Printf("error encoding response: %v\n", err)
+	}
 }
 
 func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +242,9 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Printf("error encoding response: %v\n", err)
+	}
 }
 
 func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {

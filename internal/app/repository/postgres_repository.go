@@ -86,7 +86,9 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) er
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func(tx *pgx.Tx) {
+		_ = tx.Rollback()
+	}(tx)
 
 	for shortURL, originalURL := range urls {
 		_, err = tx.Exec(`
