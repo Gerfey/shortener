@@ -36,7 +36,7 @@ func NewURLHandler(shortener *service.ShortenerService, url *service.URLService,
 func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
-		w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
