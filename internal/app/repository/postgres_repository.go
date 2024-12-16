@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"sync"
 )
 
 type PostgresRepository struct {
 	pool *pgxpool.Pool
-	mu   sync.RWMutex
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
@@ -36,9 +34,6 @@ func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
 }
 
 func (r *PostgresRepository) All() map[string]string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	urls := make(map[string]string)
 	rows, err := r.pool.Query(context.Background(), "SELECT short_url, original_url FROM urls")
 	if err != nil {
@@ -58,9 +53,6 @@ func (r *PostgresRepository) All() map[string]string {
 }
 
 func (r *PostgresRepository) Find(key string) (string, bool, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	var originalURL string
 	var isDeleted bool
 
@@ -73,9 +65,6 @@ func (r *PostgresRepository) Find(key string) (string, bool, bool) {
 }
 
 func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	var shortURL string
 	err := r.pool.QueryRow(context.Background(), "SELECT short_url FROM urls WHERE original_url = $1", originalURL).Scan(&shortURL)
 	if err != nil {
@@ -85,9 +74,6 @@ func (r *PostgresRepository) FindShortURL(originalURL string) (string, error) {
 }
 
 func (r *PostgresRepository) Save(key, value string, userID string) (string, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	_, err := r.pool.Exec(context.Background(), `
 		INSERT INTO urls (short_url, original_url, user_id)
 		VALUES ($1, $2, $3)
@@ -100,9 +86,6 @@ func (r *PostgresRepository) Save(key, value string, userID string) (string, err
 }
 
 func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	tx, err := r.pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -132,9 +115,6 @@ func (r *PostgresRepository) SaveBatch(urls map[string]string, userID string) er
 }
 
 func (r *PostgresRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	tx, err := r.pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -164,9 +144,6 @@ func (r *PostgresRepository) DeleteUserURLsBatch(shortURLs []string, userID stri
 }
 
 func (r *PostgresRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	rows, err := r.pool.Query(context.Background(), `
 		SELECT short_url, original_url 
 		FROM urls 
