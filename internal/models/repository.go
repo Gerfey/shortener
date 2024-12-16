@@ -1,8 +1,10 @@
 package models
 
+import "context"
+
 type Repository interface {
 	All() map[string]string
-	Find(key string) (string, bool, bool)  // returns originalURL, exists, isDeleted
+	Find(key string) (string, bool, bool) // returns originalURL, exists, isDeleted
 	FindShortURL(originalURL string) (string, error)
 	Save(key, value string, userID string) (string, error)
 	SaveBatch(urls map[string]string, userID string) error
@@ -25,6 +27,6 @@ type URLInfo struct {
 }
 
 type StorageStrategy interface {
-	Initialize() (Repository, error)
+	Initialize(ctx context.Context) (Repository, error)
 	Close() error
 }

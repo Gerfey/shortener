@@ -1,13 +1,14 @@
 package strategy
 
 import (
+	"context"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/models"
 )
 
 type FileStrategy struct {
-	filePath     string
-	fileRepo     *repository.FileRepository
+	filePath string
+	fileRepo *repository.FileRepository
 }
 
 func NewFileStrategy(filePath string) *FileStrategy {
@@ -16,7 +17,7 @@ func NewFileStrategy(filePath string) *FileStrategy {
 	}
 }
 
-func (s *FileStrategy) Initialize() (models.Repository, error) {
+func (s *FileStrategy) Initialize(ctx context.Context) (models.Repository, error) {
 	fileRepository := repository.NewFileRepository(s.filePath)
 	if err := fileRepository.Initialize(); err != nil {
 		return nil, err

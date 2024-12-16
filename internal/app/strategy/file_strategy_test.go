@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,7 +23,7 @@ func TestFileStrategy_Initialize(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize()
+	repo, err := strategy.Initialize(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
@@ -38,7 +39,7 @@ func TestFileStrategy_Close(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize()
+	repo, err := strategy.Initialize(context.Background())
 	assert.NoError(t, err)
 
 	_, err = repo.Save("abc123", "https://example.com", "user1")
@@ -59,7 +60,7 @@ func TestFileStrategy_InitializeError(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize()
+	repo, err := strategy.Initialize(context.Background())
 	assert.Error(t, err)
 	assert.Nil(t, repo)
 }

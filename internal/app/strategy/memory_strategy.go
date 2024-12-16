@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"context"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/models"
 )
@@ -11,7 +12,7 @@ func NewMemoryStrategy() *MemoryStrategy {
 	return &MemoryStrategy{}
 }
 
-func (s *MemoryStrategy) Initialize() (models.Repository, error) {
+func (s *MemoryStrategy) Initialize(ctx context.Context) (models.Repository, error) {
 	return repository.NewMemoryRepository(), nil
 }
 

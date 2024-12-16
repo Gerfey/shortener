@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/service"
@@ -30,7 +31,7 @@ func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrateg
 	})
 	logrus.SetLevel(logrus.InfoLevel)
 
-	repository, err := strategy.Initialize()
+	repository, err := strategy.Initialize(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,7 @@ func (a *ShortenerApp) Run() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logrus.Fatal(err)
 		}
 	}()
