@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -18,7 +19,7 @@ func NewMemoryRepository() *MemoryRepository {
 	}
 }
 
-func (r *MemoryRepository) All() map[string]string {
+func (r *MemoryRepository) All(ctx context.Context) map[string]string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -29,7 +30,7 @@ func (r *MemoryRepository) All() map[string]string {
 	return result
 }
 
-func (r *MemoryRepository) Find(key string) (string, bool, bool) {
+func (r *MemoryRepository) Find(ctx context.Context, key string) (string, bool, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -39,7 +40,7 @@ func (r *MemoryRepository) Find(key string) (string, bool, bool) {
 	return "", false, false
 }
 
-func (r *MemoryRepository) FindShortURL(originalURL string) (string, error) {
+func (r *MemoryRepository) FindShortURL(ctx context.Context, originalURL string) (string, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -51,7 +52,7 @@ func (r *MemoryRepository) FindShortURL(originalURL string) (string, error) {
 	return "", fmt.Errorf("original URL not found")
 }
 
-func (r *MemoryRepository) Save(key, value string, userID string) (string, error) {
+func (r *MemoryRepository) Save(ctx context.Context, key, value string, userID string) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -63,7 +64,7 @@ func (r *MemoryRepository) Save(key, value string, userID string) (string, error
 	return key, nil
 }
 
-func (r *MemoryRepository) SaveBatch(urls map[string]string, userID string) error {
+func (r *MemoryRepository) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -77,7 +78,7 @@ func (r *MemoryRepository) SaveBatch(urls map[string]string, userID string) erro
 	return nil
 }
 
-func (r *MemoryRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
+func (r *MemoryRepository) GetUserURLs(ctx context.Context, userID string) ([]models.URLPair, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -93,7 +94,7 @@ func (r *MemoryRepository) GetUserURLs(userID string) ([]models.URLPair, error) 
 	return userURLs, nil
 }
 
-func (r *MemoryRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+func (r *MemoryRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -106,6 +107,6 @@ func (r *MemoryRepository) DeleteUserURLsBatch(shortURLs []string, userID string
 	return nil
 }
 
-func (r *MemoryRepository) Ping() error {
+func (r *MemoryRepository) Ping(ctx context.Context) error {
 	return nil
 }

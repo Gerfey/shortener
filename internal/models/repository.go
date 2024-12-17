@@ -3,14 +3,14 @@ package models
 import "context"
 
 type Repository interface {
-	All() map[string]string
-	Find(key string) (string, bool, bool) // returns originalURL, exists, isDeleted
-	FindShortURL(originalURL string) (string, error)
-	Save(key, value string, userID string) (string, error)
-	SaveBatch(urls map[string]string, userID string) error
-	GetUserURLs(userID string) ([]URLPair, error)
-	DeleteUserURLsBatch(shortURLs []string, userID string) error
-	Ping() error
+	All(ctx context.Context) map[string]string
+	Find(ctx context.Context, key string) (string, bool, bool) // returns originalURL, exists, isDeleted
+	FindShortURL(ctx context.Context, originalURL string) (string, error)
+	Save(ctx context.Context, key, value string, userID string) (string, error)
+	SaveBatch(ctx context.Context, urls map[string]string, userID string) error
+	GetUserURLs(ctx context.Context, userID string) ([]URLPair, error)
+	DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error
+	Ping(ctx context.Context) error
 }
 
 type URLPair struct {
@@ -27,6 +27,6 @@ type URLInfo struct {
 }
 
 type StorageStrategy interface {
-	Initialize(ctx context.Context) (Repository, error)
+	Initialize() (Repository, error)
 	Close() error
 }

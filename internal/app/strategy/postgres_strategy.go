@@ -17,7 +17,7 @@ func NewPostgresStrategy(dsn string) *PostgresStrategy {
 	return &PostgresStrategy{DSN: dsn}
 }
 
-func (s *PostgresStrategy) Initialize(ctx context.Context) (models.Repository, error) {
+func (s *PostgresStrategy) Initialize() (models.Repository, error) {
 	config, err := pgxpool.ParseConfig(s.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
@@ -26,14 +26,14 @@ func (s *PostgresStrategy) Initialize(ctx context.Context) (models.Repository, e
 	config.MaxConns = 50
 	config.MinConns = 10
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
 	s.pool = pool
 
-	return repository.NewPostgresRepository(ctx, pool)
+	return repository.NewPostgresRepository(pool)
 }
 
 func (s *PostgresStrategy) Close() error {

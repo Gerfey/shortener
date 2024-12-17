@@ -1,7 +1,6 @@
 package strategy
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func TestPostgresStrategy_Initialize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			strategy := NewPostgresStrategy(tt.dsn)
-			repo, err := strategy.Initialize(context.Background())
+			repo, err := strategy.Initialize()
 
 			if tt.expectedError {
 				assert.Error(t, err)

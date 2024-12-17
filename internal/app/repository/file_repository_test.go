@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,11 +19,11 @@ func TestFileRepository_SaveAndFind(t *testing.T) {
 	originalURL := "https://example.com"
 	userID := "user1"
 
-	savedID, err := repo.Save(shortID, originalURL, userID)
+	savedID, err := repo.Save(context.Background(), shortID, originalURL, userID)
 	assert.NoError(t, err)
 	assert.Equal(t, shortID, savedID)
 
-	url, exists, isDeleted := repo.Find(shortID)
+	url, exists, isDeleted := repo.Find(context.Background(), shortID)
 	assert.True(t, exists)
 	assert.False(t, isDeleted)
 	assert.Equal(t, originalURL, url)
@@ -41,11 +42,11 @@ func TestFileRepository_GetUserURLs(t *testing.T) {
 	}
 
 	for shortID, originalURL := range urls {
-		_, err := repo.Save(shortID, originalURL, userID)
+		_, err := repo.Save(context.Background(), shortID, originalURL, userID)
 		assert.NoError(t, err)
 	}
 
-	userURLs, err := repo.GetUserURLs(userID)
+	userURLs, err := repo.GetUserURLs(context.Background(), userID)
 	assert.NoError(t, err)
 	assert.Equal(t, len(urls), len(userURLs))
 }
@@ -73,7 +74,7 @@ func TestFileRepository_Close(t *testing.T) {
 	originalURL := "https://example.com"
 	userID := "user1"
 
-	_, err := repo.Save(shortID, originalURL, userID)
+	_, err := repo.Save(context.Background(), shortID, originalURL, userID)
 	assert.NoError(t, err)
 
 	err = repo.Close()
@@ -96,11 +97,11 @@ func TestFileRepository_All(t *testing.T) {
 	}
 
 	for shortID, originalURL := range urls {
-		_, err := repo.Save(shortID, originalURL, "user1")
+		_, err := repo.Save(context.Background(), shortID, originalURL, "user1")
 		assert.NoError(t, err)
 	}
 
-	allURLs := repo.All()
+	allURLs := repo.All(context.Background())
 	assert.Equal(t, len(urls), len(allURLs))
 	for shortID, originalURL := range urls {
 		assert.Equal(t, originalURL, allURLs[shortID])
@@ -114,14 +115,14 @@ func TestFileRepository_FindShortURL(t *testing.T) {
 	err := repo.Initialize()
 	assert.NoError(t, err)
 
-	_, err = repo.Save("abc123", "https://example.com", "user1")
+	_, err = repo.Save(context.Background(), "abc123", "https://example.com", "user1")
 	assert.NoError(t, err)
 
-	shortURL, err := repo.FindShortURL("https://example.com")
+	shortURL, err := repo.FindShortURL(context.Background(), "https://example.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "abc123", shortURL)
 
-	shortURL, err = repo.FindShortURL("https://nonexistent.com")
+	shortURL, err = repo.FindShortURL(context.Background(), "https://nonexistent.com")
 	assert.Error(t, err)
 	assert.Empty(t, shortURL)
 
@@ -142,17 +143,17 @@ func TestFileRepository_SaveBatch(t *testing.T) {
 	}
 	userID := "user1"
 
-	err = repo.SaveBatch(urls, userID)
+	err = repo.SaveBatch(context.Background(), urls, userID)
 	assert.NoError(t, err)
 
 	for shortID, originalURL := range urls {
-		savedURL, exists, isDeleted := repo.Find(shortID)
+		savedURL, exists, isDeleted := repo.Find(context.Background(), shortID)
 		assert.True(t, exists)
 		assert.False(t, isDeleted)
 		assert.Equal(t, originalURL, savedURL)
 	}
 
-	err = repo.SaveBatch(map[string]string{}, userID)
+	err = repo.SaveBatch(context.Background(), map[string]string{}, userID)
 	assert.NoError(t, err)
 
 	err = repo.Close()
@@ -166,7 +167,7 @@ func TestFileRepository_Ping(t *testing.T) {
 	err := repo.Initialize()
 	assert.NoError(t, err)
 
-	err = repo.Ping()
+	err = repo.Ping(context.Background())
 	assert.NoError(t, err)
 
 	err = repo.Close()
@@ -191,36 +192,36 @@ func TestFileRepository_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	for _, u := range urls {
-		_, err := repo.Save(u.shortURL, u.originalURL, u.userID)
+		_, err := repo.Save(context.Background(), u.shortURL, u.originalURL, u.userID)
 		assert.NoError(t, err)
 	}
 
-	err = repo.DeleteUserURLsBatch([]string{"abc123", "def456"}, "user1")
+	err = repo.DeleteUserURLsBatch(context.Background(), []string{"abc123", "def456"}, "user1")
 	assert.NoError(t, err)
 
-	_, _, isDeleted1 := repo.Find("abc123")
+	_, _, isDeleted1 := repo.Find(context.Background(), "abc123")
 	assert.True(t, isDeleted1, "URL abc123 should be marked as deleted")
-	_, _, isDeleted2 := repo.Find("def456")
+	_, _, isDeleted2 := repo.Find(context.Background(), "def456")
 	assert.True(t, isDeleted2, "URL def456 should be marked as deleted")
 
-	err = repo.DeleteUserURLsBatch([]string{"ghi789"}, "user1")
+	err = repo.DeleteUserURLsBatch(context.Background(), []string{"ghi789"}, "user1")
 	assert.NoError(t, err)
 
-	_, _, isDeleted3 := repo.Find("ghi789")
+	_, _, isDeleted3 := repo.Find(context.Background(), "ghi789")
 	assert.False(t, isDeleted3, "URL ghi789 should not be marked as deleted")
 
-	err = repo.DeleteUserURLsBatch([]string{"nonexistent"}, "user1")
+	err = repo.DeleteUserURLsBatch(context.Background(), []string{"nonexistent"}, "user1")
 	assert.NoError(t, err)
 
 	repo2 := NewFileRepository(tmpFile)
 	err = repo2.Initialize()
 	assert.NoError(t, err)
 
-	_, _, isDeleted1Again := repo2.Find("abc123")
+	_, _, isDeleted1Again := repo2.Find(context.Background(), "abc123")
 	assert.True(t, isDeleted1Again, "URL abc123 should still be marked as deleted after reload")
-	_, _, isDeleted2Again := repo2.Find("def456")
+	_, _, isDeleted2Again := repo2.Find(context.Background(), "def456")
 	assert.True(t, isDeleted2Again, "URL def456 should still be marked as deleted after reload")
-	_, _, isDeleted3Again := repo2.Find("ghi789")
+	_, _, isDeleted3Again := repo2.Find(context.Background(), "ghi789")
 	assert.False(t, isDeleted3Again, "URL ghi789 should still not be marked as deleted after reload")
 }
 
@@ -231,18 +232,18 @@ func TestFileRepository_Find_WithDeletedURLs(t *testing.T) {
 	err := repo.Initialize()
 	assert.NoError(t, err)
 
-	_, err = repo.Save("test123", "http://example.com", "user1")
+	_, err = repo.Save(context.Background(), "test123", "http://example.com", "user1")
 	assert.NoError(t, err)
 
-	originalURL, exists, isDeleted := repo.Find("test123")
+	originalURL, exists, isDeleted := repo.Find(context.Background(), "test123")
 	assert.True(t, exists)
 	assert.False(t, isDeleted)
 	assert.Equal(t, "http://example.com", originalURL)
 
-	err = repo.DeleteUserURLsBatch([]string{"test123"}, "user1")
+	err = repo.DeleteUserURLsBatch(context.Background(), []string{"test123"}, "user1")
 	assert.NoError(t, err)
 
-	originalURL, exists, isDeleted = repo.Find("test123")
+	originalURL, exists, isDeleted = repo.Find(context.Background(), "test123")
 	assert.True(t, exists)
 	assert.True(t, isDeleted)
 	assert.Equal(t, "http://example.com", originalURL)
@@ -251,7 +252,7 @@ func TestFileRepository_Find_WithDeletedURLs(t *testing.T) {
 	err = repo2.Initialize()
 	assert.NoError(t, err)
 
-	originalURL, exists, isDeleted = repo2.Find("test123")
+	originalURL, exists, isDeleted = repo2.Find(context.Background(), "test123")
 	assert.True(t, exists)
 	assert.True(t, isDeleted)
 	assert.Equal(t, "http://example.com", originalURL)

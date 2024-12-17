@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/Gerfey/shortener/internal/models"
@@ -47,7 +48,7 @@ func (fs *FileRepository) Initialize() error {
 	return nil
 }
 
-func (fs *FileRepository) Save(key, value string, userID string) (string, error) {
+func (fs *FileRepository) Save(ctx context.Context, key, value string, userID string) (string, error) {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -62,7 +63,7 @@ func (fs *FileRepository) Save(key, value string, userID string) (string, error)
 	return key, nil
 }
 
-func (fs *FileRepository) SaveBatch(urls map[string]string, userID string) error {
+func (fs *FileRepository) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -79,7 +80,7 @@ func (fs *FileRepository) SaveBatch(urls map[string]string, userID string) error
 	return nil
 }
 
-func (fs *FileRepository) Find(key string) (string, bool, bool) {
+func (fs *FileRepository) Find(ctx context.Context, key string) (string, bool, bool) {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -89,7 +90,7 @@ func (fs *FileRepository) Find(key string) (string, bool, bool) {
 	return "", false, false
 }
 
-func (fs *FileRepository) FindShortURL(originalURL string) (string, error) {
+func (fs *FileRepository) FindShortURL(ctx context.Context, originalURL string) (string, error) {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -101,7 +102,7 @@ func (fs *FileRepository) FindShortURL(originalURL string) (string, error) {
 	return "", fmt.Errorf("URL not found")
 }
 
-func (fs *FileRepository) All() map[string]string {
+func (fs *FileRepository) All(ctx context.Context) map[string]string {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -112,7 +113,7 @@ func (fs *FileRepository) All() map[string]string {
 	return result
 }
 
-func (fs *FileRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
+func (fs *FileRepository) GetUserURLs(ctx context.Context, userID string) ([]models.URLPair, error) {
 	fs.Lock()
 	defer fs.Unlock()
 
@@ -128,7 +129,7 @@ func (fs *FileRepository) GetUserURLs(userID string) ([]models.URLPair, error) {
 	return userURLs, nil
 }
 
-func (fs *FileRepository) DeleteUserURLsBatch(shortURLs []string, userID string) error {
+func (fs *FileRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error {
 	fs.Lock()
 
 	for _, shortURL := range shortURLs {
@@ -143,7 +144,7 @@ func (fs *FileRepository) DeleteUserURLsBatch(shortURLs []string, userID string)
 	return fs.Close()
 }
 
-func (fs *FileRepository) Ping() error {
+func (fs *FileRepository) Ping(ctx context.Context) error {
 	fs.Lock()
 	defer fs.Unlock()
 

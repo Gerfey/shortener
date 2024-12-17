@@ -23,11 +23,11 @@ func TestFileStrategy_Initialize(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize(context.Background())
+	repo, err := strategy.Initialize()
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
-	url, exists, isDeleted := repo.Find("abc123")
+	url, exists, isDeleted := repo.Find(context.Background(), "abc123")
 	assert.True(t, exists)
 	assert.False(t, isDeleted)
 	assert.Equal(t, "https://example.com", url)
@@ -39,10 +39,10 @@ func TestFileStrategy_Close(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize(context.Background())
+	repo, err := strategy.Initialize()
 	assert.NoError(t, err)
 
-	_, err = repo.Save("abc123", "https://example.com", "user1")
+	_, err = repo.Save(context.Background(), "abc123", "https://example.com", "user1")
 	assert.NoError(t, err)
 
 	err = strategy.Close()
@@ -60,7 +60,7 @@ func TestFileStrategy_InitializeError(t *testing.T) {
 
 	strategy := NewFileStrategy(tmpFile)
 
-	repo, err := strategy.Initialize(context.Background())
+	repo, err := strategy.Initialize()
 	assert.Error(t, err)
 	assert.Nil(t, repo)
 }

@@ -31,7 +31,7 @@ func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrateg
 	})
 	logrus.SetLevel(logrus.InfoLevel)
 
-	repository, err := strategy.Initialize(context.Background())
+	repository, err := strategy.Initialize()
 	if err != nil {
 		return nil, err
 	}

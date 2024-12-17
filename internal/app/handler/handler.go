@@ -42,7 +42,7 @@ func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	userID := cookie.Value
-	urls, err := h.repository.GetUserURLs(userID)
+	urls, err := h.repository.GetUserURLs(r.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -70,7 +70,7 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +101,7 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 	}
 
-	shortURL, err := h.shortener.ShortenID(originalURL, cookie.Value)
+	shortURL, err := h.shortener.ShortenID(r.Context(), originalURL, cookie.Value)
 	if err != nil {
 		if err == models.ErrURLExists {
 			w.Header().Set("Content-Type", "text/plain")
@@ -129,7 +129,7 @@ func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	originalURL, found, isDeleted := h.repository.Find(id)
+	originalURL, found, isDeleted := h.repository.Find(r.Context(), id)
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -172,7 +172,7 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 		http.SetCookie(w, cookie)
 	}
 
-	shortURL, err := h.shortener.ShortenID(request.URL, cookie.Value)
+	shortURL, err := h.shortener.ShortenID(r.Context(), request.URL, cookie.Value)
 	if err != nil {
 		if err == models.ErrURLExists {
 			response := struct {
@@ -251,7 +251,7 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 	}, len(request))
 
 	for i, item := range request {
-		shortURL, err := h.shortener.ShortenID(item.OriginalURL, cookie.Value)
+		shortURL, err := h.shortener.ShortenID(r.Context(), item.OriginalURL, cookie.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -267,7 +267,7 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	if err := h.repository.SaveBatch(urls, cookie.Value); err != nil {
+	if err := h.repository.SaveBatch(r.Context(), urls, cookie.Value); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -280,7 +280,7 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
-	err := h.repository.Ping()
+	err := h.repository.Ping(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -303,7 +303,7 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := cookie.Value
 
-	shortenID, err := h.shortener.ShortenID(string(bodySaveURL), userID)
+	shortenID, err := h.shortener.ShortenID(r.Context(), string(bodySaveURL), userID)
 
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -360,7 +360,7 @@ func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Reques
 
 	done := make(chan error, 1)
 	go func() {
-		done <- h.repository.DeleteUserURLsBatch(shortURLs, cookie.Value)
+		done <- h.repository.DeleteUserURLsBatch(r.Context(), shortURLs, cookie.Value)
 	}()
 
 	select {
