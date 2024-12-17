@@ -33,7 +33,7 @@ func (s *ShortenerService) GetShortURL(ctx context.Context, originalURL string) 
 func (s *ShortenerService) ShortenID(ctx context.Context, url string, userID string) (string, error) {
 	existingShortURL, err := s.repository.FindShortURL(ctx, url)
 	if err == nil {
-		return existingShortURL, models.ErrURLExists
+		return existingShortURL, nil
 	}
 
 	shortID := generateShortID(lenShortID)
