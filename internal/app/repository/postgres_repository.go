@@ -8,7 +8,7 @@ import (
 )
 
 type PostgresRepository struct {
-	pool *pgxpool.Pool
+	pool DBPool
 }
 
 func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
