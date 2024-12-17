@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/mock"
-	"github.com/Gerfey/shortener/internal/models"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
+	"github.com/Gerfey/shortener/internal/mock"
+	"github.com/Gerfey/shortener/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -31,7 +31,7 @@ func TestURLHandler_ShortenURL(t *testing.T) {
 	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
 
 	tests := []struct {
-		name           string
+		name          string
 		url           string
 		expectedCode  int
 		mockSetup     func()
@@ -54,7 +54,7 @@ func TestURLHandler_ShortenURL(t *testing.T) {
 		{
 			name:          "URL Already Exists",
 			url:           "https://example.com",
-			expectedCode:  http.StatusCreated,
+			expectedCode:  http.StatusConflict,
 			expectedShort: "http://localhost:8080/existing123",
 			mockSetup: func() {
 				mockRepo.EXPECT().
@@ -95,16 +95,16 @@ func TestURLHandler_GetOriginalURL(t *testing.T) {
 	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
 
 	tests := []struct {
-		name          string
-		id            string
-		expectedCode  int
-		mockSetup     func()
-		expectedURL   string
-		isDeleted     bool
+		name         string
+		id           string
+		expectedCode int
+		mockSetup    func()
+		expectedURL  string
+		isDeleted    bool
 	}{
 		{
 			name:         "Success",
-			id:          "abc123",
+			id:           "abc123",
 			expectedCode: http.StatusTemporaryRedirect,
 			expectedURL:  "https://example.com",
 			mockSetup: func() {
@@ -115,7 +115,7 @@ func TestURLHandler_GetOriginalURL(t *testing.T) {
 		},
 		{
 			name:         "Not Found",
-			id:          "notfound",
+			id:           "notfound",
 			expectedCode: http.StatusNotFound,
 			mockSetup: func() {
 				mockRepo.EXPECT().
@@ -125,7 +125,7 @@ func TestURLHandler_GetOriginalURL(t *testing.T) {
 		},
 		{
 			name:         "Deleted URL",
-			id:          "deleted123",
+			id:           "deleted123",
 			expectedCode: http.StatusGone,
 			mockSetup: func() {
 				mockRepo.EXPECT().
@@ -198,7 +198,7 @@ func TestURLHandler_ShortenURLJSON(t *testing.T) {
 			request: models.ShortenRequest{
 				URL: "https://example.com",
 			},
-			expectedCode: http.StatusCreated,
+			expectedCode: http.StatusConflict,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					FindShortURL(gomock.Any(), "https://example.com").
@@ -221,7 +221,6 @@ func TestURLHandler_ShortenURLJSON(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			handler.ShortenJSONHandler(w, req)
-
 			assert.Equal(t, tt.expectedCode, w.Code)
 
 			var response models.ShortenResponse
@@ -246,15 +245,15 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
 
 	tests := []struct {
-		name          string
-		userID        string
-		expectedCode  int
-		mockSetup     func()
-		expectedURLs  []models.URLPair
+		name         string
+		userID       string
+		expectedCode int
+		mockSetup    func()
+		expectedURLs []models.URLPair
 	}{
 		{
-			name:    "Success with URLs",
-			userID:  "user123",
+			name:         "Success with URLs",
+			userID:       "user123",
 			expectedCode: http.StatusOK,
 			mockSetup: func() {
 				mockRepo.EXPECT().
@@ -270,8 +269,8 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 			},
 		},
 		{
-			name:    "No URLs Found",
-			userID:  "user456",
+			name:         "No URLs Found",
+			userID:       "user456",
 			expectedCode: http.StatusNoContent,
 			mockSetup: func() {
 				mockRepo.EXPECT().
@@ -325,9 +324,9 @@ func TestURLHandler_DeleteUserURLs(t *testing.T) {
 		mockSetup    func()
 	}{
 		{
-			name:    "Success",
-			userID:  "user123",
-			urls:    []string{"abc123", "def456"},
+			name:         "Success",
+			userID:       "user123",
+			urls:         []string{"abc123", "def456"},
 			expectedCode: http.StatusAccepted,
 			mockSetup: func() {
 				mockRepo.EXPECT().

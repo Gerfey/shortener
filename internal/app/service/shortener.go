@@ -3,8 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/Gerfey/shortener/internal/models"
 	"math/rand"
+
+	"github.com/Gerfey/shortener/internal/models"
 )
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -33,7 +34,7 @@ func (s *ShortenerService) GetShortURL(ctx context.Context, originalURL string) 
 func (s *ShortenerService) ShortenID(ctx context.Context, url string, userID string) (string, error) {
 	existingShortURL, err := s.repository.FindShortURL(ctx, url)
 	if err == nil {
-		return existingShortURL, nil
+		return existingShortURL, models.ErrURLExists
 	}
 
 	shortID := generateShortID(lenShortID)

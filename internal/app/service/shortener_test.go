@@ -89,6 +89,6 @@ func TestShortenerService_ShortenID_URLExists(t *testing.T) {
 	mockRepo.EXPECT().FindShortURL(ctx, originalURL).Return(existingShortURL, nil)
 
 	shortURL, err := shortener.ShortenID(ctx, originalURL, userID)
-	assert.NoError(t, err)
+	assert.Equal(t, models.ErrURLExists, err)
 	assert.Equal(t, existingShortURL, shortURL)
 }
