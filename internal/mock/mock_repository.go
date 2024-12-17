@@ -10,6 +10,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	models "github.com/Gerfey/shortener/internal/models"
@@ -41,76 +42,120 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // All mocks base method.
-func (m *MockRepository) All() map[string]string {
+func (m *MockRepository) All(ctx context.Context) map[string]string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "All")
+	ret := m.ctrl.Call(m, "All", ctx)
 	ret0, _ := ret[0].(map[string]string)
 	return ret0
 }
 
 // All indicates an expected call of All.
-func (mr *MockRepositoryMockRecorder) All() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) All(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepository)(nil).All))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockRepository)(nil).All), ctx)
+}
+
+// DeleteUserURLsBatch mocks base method.
+func (m *MockRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserURLsBatch", ctx, shortURLs, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserURLsBatch indicates an expected call of DeleteUserURLsBatch.
+func (mr *MockRepositoryMockRecorder) DeleteUserURLsBatch(ctx, shortURLs, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserURLsBatch", reflect.TypeOf((*MockRepository)(nil).DeleteUserURLsBatch), ctx, shortURLs, userID)
 }
 
 // Find mocks base method.
-func (m *MockRepository) Find(key string) (string, bool) {
+func (m *MockRepository) Find(ctx context.Context, key string) (string, bool, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Find", key)
+	ret := m.ctrl.Call(m, "Find", ctx, key)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
 }
 
 // Find indicates an expected call of Find.
-func (mr *MockRepositoryMockRecorder) Find(key any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Find(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockRepository)(nil).Find), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockRepository)(nil).Find), ctx, key)
 }
 
 // FindShortURL mocks base method.
-func (m *MockRepository) FindShortURL(originalURL string) (string, error) {
+func (m *MockRepository) FindShortURL(ctx context.Context, originalURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindShortURL", originalURL)
+	ret := m.ctrl.Call(m, "FindShortURL", ctx, originalURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindShortURL indicates an expected call of FindShortURL.
-func (mr *MockRepositoryMockRecorder) FindShortURL(originalURL any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) FindShortURL(ctx, originalURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockRepository)(nil).FindShortURL), originalURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockRepository)(nil).FindShortURL), ctx, originalURL)
+}
+
+// GetUserURLs mocks base method.
+func (m *MockRepository) GetUserURLs(ctx context.Context, userID string) ([]models.URLPair, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserURLs", ctx, userID)
+	ret0, _ := ret[0].([]models.URLPair)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserURLs indicates an expected call of GetUserURLs.
+func (mr *MockRepositoryMockRecorder) GetUserURLs(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockRepository)(nil).GetUserURLs), ctx, userID)
+}
+
+// Ping mocks base method.
+func (m *MockRepository) Ping(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockRepositoryMockRecorder) Ping(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping), ctx)
 }
 
 // Save mocks base method.
-func (m *MockRepository) Save(key, value string) (string, error) {
+func (m *MockRepository) Save(ctx context.Context, key, value, userID string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", key, value)
+	ret := m.ctrl.Call(m, "Save", ctx, key, value, userID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockRepositoryMockRecorder) Save(key, value any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Save(ctx, key, value, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), ctx, key, value, userID)
 }
 
 // SaveBatch mocks base method.
-func (m *MockRepository) SaveBatch(urls map[string]string) error {
+func (m *MockRepository) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveBatch", urls)
+	ret := m.ctrl.Call(m, "SaveBatch", ctx, urls, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveBatch indicates an expected call of SaveBatch.
-func (mr *MockRepositoryMockRecorder) SaveBatch(urls any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) SaveBatch(ctx, urls, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockRepository)(nil).SaveBatch), urls)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockRepository)(nil).SaveBatch), ctx, urls, userID)
 }
 
 // MockStorageStrategy is a mock of StorageStrategy interface.
