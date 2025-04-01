@@ -1,15 +1,16 @@
 package strategy
 
 import (
+	"context"
 	"fmt"
 	"github.com/Gerfey/shortener/internal/app/repository"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresStrategy struct {
-	DSN        string
-	connection *pgx.Conn
+	DSN  string
+	pool *pgxpool.Pool
 }
 
 func NewPostgresStrategy(dsn string) *PostgresStrategy {
@@ -17,37 +18,29 @@ func NewPostgresStrategy(dsn string) *PostgresStrategy {
 }
 
 func (s *PostgresStrategy) Initialize() (models.Repository, error) {
-	config, err := pgx.ParseConnectionString(s.DSN)
+	config, err := pgxpool.ParseConfig(s.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
-	conn, err := pgx.Connect(config)
+	config.MaxConns = 50
+	config.MinConns = 10
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	s.connection = conn
+	s.pool = pool
 
-	query := `
-	CREATE TABLE IF NOT EXISTS urls (
-		id SERIAL PRIMARY KEY,
-		short_url VARCHAR(255) UNIQUE NOT NULL,
-		original_url TEXT UNIQUE NOT NULL
-	)`
-
-	_, err = conn.Exec(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create table: %w", err)
-	}
-
-	return repository.NewPostgresRepository(conn)
+	return repository.NewPostgresRepository(pool)
 }
 
 func (s *PostgresStrategy) Close() error {
-	err := s.connection.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close connection: %w", err)
+	if s.pool == nil {
+		return nil
 	}
+
+	s.pool.Close()
 	return nil
 }

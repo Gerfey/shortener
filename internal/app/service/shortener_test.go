@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"errors"
-	"github.com/Gerfey/shortener/internal/mock"
-	"go.uber.org/mock/gomock"
 	"testing"
 
+	"github.com/Gerfey/shortener/internal/mock"
+	"github.com/Gerfey/shortener/internal/models"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestShortenSuccess(t *testing.T) {
@@ -18,10 +20,13 @@ func TestShortenSuccess(t *testing.T) {
 
 	shortID := "s65fg"
 	originalURL := "https://example.com"
+	userID := "user123"
+	ctx := context.Background()
 
-	mockRepo.EXPECT().Save(gomock.Any(), originalURL).Return(shortID, nil).Times(1)
+	mockRepo.EXPECT().FindShortURL(ctx, originalURL).Return("", models.ErrURLNotFound)
+	mockRepo.EXPECT().Save(ctx, gomock.Any(), originalURL, userID).Return(shortID, nil)
 
-	id, err := shortener.ShortenID(originalURL)
+	id, err := shortener.ShortenID(ctx, originalURL, userID)
 	assert.NoError(t, err)
 	assert.Equal(t, len(id), 5)
 }
@@ -35,16 +40,17 @@ func TestFindURLSuccess(t *testing.T) {
 
 	shortID := "s65fg"
 	originalURL := "https://example.com"
+	ctx := context.Background()
 
-	mockRepo.EXPECT().Find(shortID).Return(originalURL, true).Times(1)
+	mockRepo.EXPECT().Find(ctx, shortID).Return(originalURL, true, false)
 
-	url, err := shortener.FindURL(shortID)
+	url, err := shortener.FindURL(ctx, shortID)
 	assert.NoError(t, err)
 	assert.Equal(t, originalURL, url)
 
-	mockRepo.EXPECT().Find("notfound").Return("", false).Times(1)
+	mockRepo.EXPECT().Find(ctx, "notfound").Return("", false, false)
 
-	_, err = shortener.FindURL("notfound")
+	_, err = shortener.FindURL(ctx, "notfound")
 	assert.Error(t, err)
 }
 
@@ -55,12 +61,34 @@ func TestShortenerService_ShortenID_Error(t *testing.T) {
 	mockRepo := mock.NewMockRepository(ctrl)
 	shortener := NewShortenerService(mockRepo)
 
-	shortID := "s65fg"
 	originalURL := "https://example.com"
+	userID := "user123"
+	ctx := context.Background()
 
-	mockRepo.EXPECT().Save(gomock.Any(), originalURL).Return(shortID, errors.New("database error"))
+	expectedErr := errors.New("database error")
+	mockRepo.EXPECT().FindShortURL(ctx, originalURL).Return("", models.ErrURLNotFound)
+	mockRepo.EXPECT().Save(ctx, gomock.Any(), originalURL, userID).Return("", expectedErr)
 
-	_, err := shortener.ShortenID("https://example.com")
+	_, err := shortener.ShortenID(ctx, originalURL, userID)
 	assert.Error(t, err)
-	assert.Equal(t, "database error", err.Error())
+	assert.Equal(t, expectedErr, err)
+}
+
+func TestShortenerService_ShortenID_URLExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mock.NewMockRepository(ctrl)
+	shortener := NewShortenerService(mockRepo)
+
+	originalURL := "https://example.com"
+	existingShortURL := "abc123"
+	userID := "user123"
+	ctx := context.Background()
+
+	mockRepo.EXPECT().FindShortURL(ctx, originalURL).Return(existingShortURL, nil)
+
+	shortURL, err := shortener.ShortenID(ctx, originalURL, userID)
+	assert.Equal(t, models.ErrURLExists, err)
+	assert.Equal(t, existingShortURL, shortURL)
 }
