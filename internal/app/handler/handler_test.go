@@ -12,7 +12,7 @@ import (
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/mock"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

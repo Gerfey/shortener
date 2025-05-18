@@ -14,7 +14,9 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		if supportsGzip {
 			cw := compress.NewGzipWriter(w)
 			ow = cw
-			defer cw.Close()
+			defer func() {
+			_ = cw.Close()
+		}()
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -26,7 +28,9 @@ func GzipMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			r.Body = cr
-			defer cr.Close()
+			defer func() {
+			_ = cr.Close()
+		}()
 		}
 		next.ServeHTTP(ow, r)
 	})

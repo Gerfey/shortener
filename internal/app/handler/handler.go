@@ -9,9 +9,9 @@ import (
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -76,7 +76,11 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Printf("error closing request body: %v\n", err)
+		}
+	}()
 
 	if len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -153,7 +157,11 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Printf("error closing request body: %v\n", err)
+		}
+	}()
 
 	if request.URL == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -218,7 +226,11 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Printf("error closing request body: %v\n", err)
+		}
+	}()
 
 	if len(request) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -350,7 +362,11 @@ func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Printf("error closing request body: %v\n", err)
+		}
+	}()
 
 	var shortURLs []string
 	if err := json.Unmarshal(body, &shortURLs); err != nil {

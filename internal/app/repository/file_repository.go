@@ -31,7 +31,11 @@ func (fs *FileRepository) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("failed to open file for reading: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("error closing file: %v\n", err)
+		}
+	}()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -152,7 +156,11 @@ func (fs *FileRepository) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to ping file storage: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("error closing file: %v\n", err)
+		}
+	}()
 
 	return nil
 }
@@ -165,7 +173,11 @@ func (fs *FileRepository) Close() error {
 	if err != nil {
 		return fmt.Errorf("failed to open file for writing: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("error closing file: %v\n", err)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(fs.data); err != nil {

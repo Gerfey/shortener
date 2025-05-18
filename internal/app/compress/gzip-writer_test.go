@@ -30,7 +30,7 @@ func TestGzipWriter(t *testing.T) {
 	gr, err := gzip.NewReader(bytes.NewReader(compressedData))
 	assert.NoError(t, err, "Failed to create gzip reader")
 
-	defer gr.Close()
+	defer func() { _ = gr.Close() }()
 
 	decompressedData, err := io.ReadAll(gr)
 	assert.NoError(t, err, "Failed to read decompressed data")

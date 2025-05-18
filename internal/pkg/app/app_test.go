@@ -40,10 +40,10 @@ func TestNewShortenerApp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Setenv("STORAGE_TYPE", tt.storageType)
-			os.Setenv("FILE_STORAGE_PATH", tt.filePath)
-			defer os.Unsetenv("STORAGE_TYPE")
-			defer os.Unsetenv("FILE_STORAGE_PATH")
+			_ = os.Setenv("STORAGE_TYPE", tt.storageType)
+			_ = os.Setenv("FILE_STORAGE_PATH", tt.filePath)
+			defer func() { _ = os.Unsetenv("STORAGE_TYPE") }()
+			defer func() { _ = os.Unsetenv("FILE_STORAGE_PATH") }()
 
 			config := settings.NewSettings(settings.ServerSettings{
 				ServerShortenerAddress: "http://localhost:8080",
@@ -148,7 +148,7 @@ func TestShortenerApp_Run(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 

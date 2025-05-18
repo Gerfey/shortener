@@ -44,7 +44,7 @@ func TestWriteHeader(t *testing.T) {
 			}
 
 			result := recorder.Result()
-			defer result.Body.Close()
+			defer func() { _ = result.Body.Close() }()
 
 			if result.StatusCode != test.expectCode {
 				t.Errorf("expected ResponseWriter StatusCode to be %d, but got %d", test.expectCode, result.StatusCode)
