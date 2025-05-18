@@ -353,6 +353,9 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	_, err = w.Write([]byte(shortenerURL))
+	if err != nil {
+		return
+	}
 }
 
 // DeleteUserURLsHandler обрабатывает запросы для удаления URL пользователя
