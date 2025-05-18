@@ -63,7 +63,10 @@ jobs:
       - name: Build server binary
         run: |
           cd cmd/shortener
-          go build -buildvcs=false -o shortener
+          VERSION=$(git describe --tags --always --abbrev=0 || echo "v0.0.0")
+          DATE=$(date +%FT%T%z)
+          COMMIT=$(git rev-parse --short HEAD || echo "unknown")
+          go build -buildvcs=false -ldflags "-X main.buildVersion=${VERSION} -X main.buildDate=${DATE} -X main.buildCommit=${COMMIT}" -o shortener
 
       - name: "Code increment #1"
         if: |
