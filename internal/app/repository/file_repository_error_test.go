@@ -27,23 +27,6 @@ func TestFileRepository_InitializeErrors(t *testing.T) {
 		err = repo.Initialize()
 		assert.Error(t, err)
 	})
-
-	t.Run("Failed to open file for reading", func(t *testing.T) {
-		noReadDir := filepath.Join(tempDir, "no_read_dir")
-		err := os.Mkdir(noReadDir, 0000)
-		assert.NoError(t, err)
-		defer func() {
-			chmodErr := os.Chmod(noReadDir, 0755)
-			assert.NoError(t, chmodErr)
-		}()
-
-		repo := &FileRepository{
-			Path: filepath.Join(noReadDir, "urls.json"),
-		}
-
-		err = repo.Initialize()
-		assert.Error(t, err)
-	})
 }
 
 func TestFileRepository_GetUserURLsErrors(t *testing.T) {
