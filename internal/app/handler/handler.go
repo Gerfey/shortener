@@ -18,6 +18,7 @@ const (
 	UserIDCookieName = "user_id"
 )
 
+// URLHandler обрабатывает HTTP-запросы для сервиса сокращения URL
 type URLHandler struct {
 	shortener  *service.ShortenerService
 	url        *service.URLService
@@ -34,6 +35,7 @@ func NewURLHandler(shortener *service.ShortenerService, url *service.URLService,
 	}
 }
 
+// GetUserURLsHandler обрабатывает запросы для получения списка URL пользователя
 func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
@@ -65,6 +67,7 @@ func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ShortenHandler обрабатывает запросы для сокращения URL
 func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -126,6 +129,7 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// RedirectURLHandler обрабатывает запросы для перенаправления по сокращенному URL
 func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
@@ -148,6 +152,7 @@ func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// ShortenJSONHandler обрабатывает запросы для сокращения URL в формате JSON
 func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
 		URL string `json:"url"`
@@ -216,6 +221,7 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ShortenBatchHandler обрабатывает запросы для пакетного сокращения URL
 func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
 	var request []struct {
 		CorrelationID string `json:"correlation_id"`
@@ -291,6 +297,7 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// PingHandler проверяет доступность хранилища данных
 func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	err := h.repository.Ping(r.Context())
 	if err != nil {
@@ -300,6 +307,7 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ShortenURLHandler обрабатывает запросы для сокращения URL
 func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -345,11 +353,9 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	_, err = w.Write([]byte(shortenerURL))
-	if err != nil {
-		return
-	}
 }
 
+// DeleteUserURLsHandler обрабатывает запросы для удаления URL пользователя
 func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {

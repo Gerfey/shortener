@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// AuthMiddleware проверяет наличие куки с идентификатором пользователя и создает её, если она отсутствует
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(handler.UserIDCookieName)
