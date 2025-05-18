@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v2"
+	pgxmock "github.com/pashagolub/pgxmock/v2"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
