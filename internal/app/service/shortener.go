@@ -16,6 +16,7 @@ type ShortenerService struct {
 	repository models.Repository
 }
 
+// NewShortenerService создает новый сервис сокращения URL
 func NewShortenerService(r models.Repository) *ShortenerService {
 	return &ShortenerService{repository: r}
 }

@@ -22,11 +22,13 @@ type Repository interface {
 	Ping(ctx context.Context) error
 }
 
+// URLPair пара короткий-оригинальный URL
 type URLPair struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// URLInfo информация о URL
 type URLInfo struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`

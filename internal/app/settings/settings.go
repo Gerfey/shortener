@@ -2,6 +2,7 @@ package settings
 
 import "time"
 
+// ServerSettings настройки сервера
 type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
@@ -15,6 +16,7 @@ type Settings struct {
 	Server ServerSettings
 }
 
+// NewSettings создает новые настройки
 func NewSettings(serverSettings ServerSettings) *Settings {
 	return &Settings{
 		Server: ServerSettings{

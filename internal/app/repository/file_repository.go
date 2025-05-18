@@ -11,12 +11,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// FileRepository хранилище URL в файле
 type FileRepository struct {
 	data map[string]models.URLInfo
 	Path string
 	sync.Mutex
 }
 
+// NewFileRepository создает новое файловое хранилище
 func NewFileRepository(path string) *FileRepository {
 	return &FileRepository{
 		data: make(map[string]models.URLInfo),
@@ -24,6 +26,7 @@ func NewFileRepository(path string) *FileRepository {
 	}
 }
 
+// Initialize инициализирует хранилище
 func (fs *FileRepository) Initialize() error {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -53,6 +56,7 @@ func (fs *FileRepository) Initialize() error {
 	return nil
 }
 
+// Save сохраняет URL в хранилище
 func (fs *FileRepository) Save(ctx context.Context, key, value string, userID string) (string, error) {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -68,6 +72,7 @@ func (fs *FileRepository) Save(ctx context.Context, key, value string, userID st
 	return key, nil
 }
 
+// SaveBatch сохраняет пакет URL
 func (fs *FileRepository) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -85,6 +90,7 @@ func (fs *FileRepository) SaveBatch(ctx context.Context, urls map[string]string,
 	return nil
 }
 
+// Find ищет URL по ключу
 func (fs *FileRepository) Find(ctx context.Context, key string) (string, bool, bool) {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -95,6 +101,7 @@ func (fs *FileRepository) Find(ctx context.Context, key string) (string, bool, b
 	return "", false, false
 }
 
+// FindShortURL ищет короткий URL
 func (fs *FileRepository) FindShortURL(ctx context.Context, originalURL string) (string, error) {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -107,6 +114,7 @@ func (fs *FileRepository) FindShortURL(ctx context.Context, originalURL string) 
 	return "", fmt.Errorf("URL not found")
 }
 
+// All возвращает все URL
 func (fs *FileRepository) All(ctx context.Context) map[string]string {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -118,6 +126,7 @@ func (fs *FileRepository) All(ctx context.Context) map[string]string {
 	return result
 }
 
+// GetUserURLs получает URL пользователя
 func (fs *FileRepository) GetUserURLs(ctx context.Context, userID string) ([]models.URLPair, error) {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -134,6 +143,7 @@ func (fs *FileRepository) GetUserURLs(ctx context.Context, userID string) ([]mod
 	return userURLs, nil
 }
 
+// DeleteUserURLsBatch удаляет URL пользователя
 func (fs *FileRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error {
 	fs.Mutex.Lock()
 
@@ -149,6 +159,7 @@ func (fs *FileRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []s
 	return fs.Close()
 }
 
+// Ping проверяет доступность хранилища
 func (fs *FileRepository) Ping(ctx context.Context) error {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()
@@ -166,6 +177,7 @@ func (fs *FileRepository) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Close закрывает хранилище
 func (fs *FileRepository) Close() error {
 	fs.Mutex.Lock()
 	defer fs.Mutex.Unlock()

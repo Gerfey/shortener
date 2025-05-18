@@ -9,15 +9,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresStrategy стратегия хранилища PostgreSQL
 type PostgresStrategy struct {
 	DSN  string
 	pool *pgxpool.Pool
 }
 
+// NewPostgresStrategy создает новую стратегию
 func NewPostgresStrategy(dsn string) *PostgresStrategy {
 	return &PostgresStrategy{DSN: dsn}
 }
 
+// Initialize инициализирует хранилище
 func (s *PostgresStrategy) Initialize() (models.Repository, error) {
 	config, err := pgxpool.ParseConfig(s.DSN)
 	if err != nil {
@@ -37,6 +40,7 @@ func (s *PostgresStrategy) Initialize() (models.Repository, error) {
 	return repository.NewPostgresRepository(pool)
 }
 
+// Close закрывает хранилище
 func (s *PostgresStrategy) Close() error {
 	if s.pool == nil {
 		return nil

@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ShortenerApp основной класс приложения
 type ShortenerApp struct {
 	settings   *settings.Settings
 	router     *chi.Mux
@@ -26,6 +27,7 @@ type ShortenerApp struct {
 	repository models.Repository
 }
 
+// NewShortenerApp создает новое приложение
 func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrategy) (*ShortenerApp, error) {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -60,6 +62,7 @@ func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrateg
 	return application, nil
 }
 
+// configureRouter настраивает маршруты
 func (a *ShortenerApp) configureRouter() {
 	a.router.Route("/", func(r chi.Router) {
 		r.Post("/", middleware.AuthMiddleware(a.handler.ShortenHandler))
@@ -72,6 +75,7 @@ func (a *ShortenerApp) configureRouter() {
 	})
 }
 
+// Run запускает приложение
 func (a *ShortenerApp) Run() {
 	logrus.Printf("Starting server: %v", a.settings.ServerAddress())
 

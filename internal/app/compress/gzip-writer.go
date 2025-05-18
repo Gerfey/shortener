@@ -12,6 +12,7 @@ type GzipWriter struct {
 	zw *gzip.Writer
 }
 
+// NewGzipWriter создает новый GzipWriter
 func NewGzipWriter(w http.ResponseWriter) *GzipWriter {
 	return &GzipWriter{
 		w:  w,
@@ -37,10 +38,12 @@ func (c *GzipWriter) WriteHeader(statusCode int) {
 	c.w.WriteHeader(statusCode)
 }
 
+// Close закрывает gzip writer
 func (c *GzipWriter) Close() error {
 	return c.zw.Close()
 }
 
+// GzipReader обертка для чтения сжатых данных
 type GzipReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader

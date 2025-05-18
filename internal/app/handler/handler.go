@@ -14,6 +14,7 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 )
 
+// Константы для работы с куками
 const (
 	UserIDCookieName = "user_id"
 )
@@ -26,6 +27,7 @@ type URLHandler struct {
 	repository models.Repository
 }
 
+// NewURLHandler создает новый обработчик URL
 func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, s *settings.Settings, r models.Repository) *URLHandler {
 	return &URLHandler{
 		shortener:  shortener,
