@@ -2,6 +2,7 @@ package models
 
 import "errors"
 
+// Стандартные ошибки сервиса
 var (
 	// ErrURLExists возвращается, когда URL уже существует в системе
 	ErrURLExists = errors.New("url already exists")

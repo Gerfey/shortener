@@ -49,6 +49,7 @@ type GzipReader struct {
 	zr *gzip.Reader
 }
 
+// NewGzipReader создает новый GzipReader
 func NewGzipReader(r io.ReadCloser) (*GzipReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
