@@ -67,9 +67,12 @@ func BenchmarkRedirectURLHandler(b *testing.B) {
 		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 
+		type ctxKey string
+		const idKey ctxKey = "id"
+
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handler.RedirectURLHandler(w, r.WithContext(
-				context.WithValue(r.Context(), struct{}{}, map[string]string{"id": shortURL}),
+				context.WithValue(r.Context(), idKey, map[string]string{"id": shortURL}),
 			))
 		}).ServeHTTP(w, req)
 	}
