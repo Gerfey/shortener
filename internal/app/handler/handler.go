@@ -82,8 +82,8 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() {
-		if err := r.Body.Close(); err != nil {
-			fmt.Printf("error closing request body: %v\n", err)
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
 		}
 	}()
 
@@ -165,8 +165,8 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	defer func() {
-		if err := r.Body.Close(); err != nil {
-			fmt.Printf("error closing request body: %v\n", err)
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
 		}
 	}()
 
@@ -197,8 +197,8 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				fmt.Printf("error encoding response: %v\n", err)
+			if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+				fmt.Printf("error encoding response: %v\n", encodeErr)
 			}
 			return
 		}
@@ -218,8 +218,8 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		fmt.Printf("error encoding response: %v\n", err)
+	if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+		fmt.Printf("error encoding response: %v\n", encodeErr)
 	}
 }
 
@@ -235,8 +235,8 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer func() {
-		if err := r.Body.Close(); err != nil {
-			fmt.Printf("error closing request body: %v\n", err)
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
 		}
 	}()
 
@@ -294,8 +294,8 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		fmt.Printf("error encoding response: %v\n", err)
+	if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+		fmt.Printf("error encoding response: %v\n", encodeErr)
 	}
 }
 
@@ -329,15 +329,15 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-			shortenerURL, err := h.url.ShortenerURL(shortenID)
-			if err != nil {
+			shortenerURL, urlErr := h.url.ShortenerURL(shortenID)
+			if urlErr != nil {
 				return
 			}
 
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusConflict)
-			_, err = w.Write([]byte(shortenerURL))
-			if err != nil {
+			_, writeErr := w.Write([]byte(shortenerURL))
+			if writeErr != nil {
 				return
 			}
 			return
@@ -374,8 +374,8 @@ func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	defer func() {
-		if err := r.Body.Close(); err != nil {
-			fmt.Printf("error closing request body: %v\n", err)
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
 		}
 	}()
 

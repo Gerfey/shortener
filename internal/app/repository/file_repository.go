@@ -41,9 +41,9 @@ func (fs *FileRepository) Initialize() error {
 		}
 	}()
 
-	stat, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to get file stats: %v", err)
+	stat, statErr := file.Stat()
+	if statErr != nil {
+		return fmt.Errorf("failed to get file stats: %v", statErr)
 	}
 
 	if stat.Size() > 0 {
