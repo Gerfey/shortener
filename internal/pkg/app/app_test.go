@@ -3,15 +3,16 @@ package app
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Gerfey/shortener/internal/app/settings"
-	"github.com/Gerfey/shortener/internal/app/strategy"
-	"github.com/Gerfey/shortener/internal/models"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Gerfey/shortener/internal/app/settings"
+	"github.com/Gerfey/shortener/internal/app/strategy"
+	"github.com/Gerfey/shortener/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewShortenerApp(t *testing.T) {

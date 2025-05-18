@@ -3,6 +3,11 @@ package app
 import (
 	"context"
 	"errors"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/service"
@@ -10,10 +15,6 @@ import (
 	"github.com/Gerfey/shortener/internal/models"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type ShortenerApp struct {

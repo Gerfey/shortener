@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Gerfey/shortener/internal/models"
-	"github.com/google/uuid"
 	"os"
 	"sync"
+
+	"github.com/Gerfey/shortener/internal/models"
+	"github.com/google/uuid"
 )
 
 type FileRepository struct {

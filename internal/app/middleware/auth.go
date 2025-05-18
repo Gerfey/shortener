@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {

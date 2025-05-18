@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"github.com/Gerfey/shortener/internal/app/compress"
 	"net/http"
 	"strings"
+
+	"github.com/Gerfey/shortener/internal/app/compress"
 )
 
 func GzipMiddleware(next http.Handler) http.Handler {
@@ -15,8 +16,8 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			cw := compress.NewGzipWriter(w)
 			ow = cw
 			defer func() {
-			_ = cw.Close()
-		}()
+				_ = cw.Close()
+			}()
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -29,8 +30,8 @@ func GzipMiddleware(next http.Handler) http.Handler {
 			}
 			r.Body = cr
 			defer func() {
-			_ = cr.Close()
-		}()
+				_ = cr.Close()
+			}()
 		}
 		next.ServeHTTP(ow, r)
 	})

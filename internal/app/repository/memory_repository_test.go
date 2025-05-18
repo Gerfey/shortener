@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
+	"testing"
+
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMemoryRepository_Find(t *testing.T) {

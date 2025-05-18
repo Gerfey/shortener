@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
+	"regexp"
+	"testing"
+
 	"github.com/Gerfey/shortener/internal/models"
 	pgx "github.com/jackc/pgx/v5"
 	pgxmock "github.com/pashagolub/pgxmock/v2"
 	"github.com/stretchr/testify/assert"
-	"regexp"
-	"testing"
 )
 
 func TestPostgresRepository_All(t *testing.T) {
