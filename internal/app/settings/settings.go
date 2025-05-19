@@ -2,6 +2,7 @@ package settings
 
 import "time"
 
+// ServerSettings настройки сервера
 type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
@@ -10,10 +11,12 @@ type ServerSettings struct {
 	ShutdownTimeout        time.Duration
 }
 
+// Settings объединяет все настройки приложения
 type Settings struct {
 	Server ServerSettings
 }
 
+// NewSettings создает новые настройки
 func NewSettings(serverSettings ServerSettings) *Settings {
 	return &Settings{
 		Server: ServerSettings{
@@ -26,14 +29,17 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 	}
 }
 
+// ServerAddress возвращает адрес для запуска HTTP-сервера
 func (c *Settings) ServerAddress() string {
 	return c.Server.ServerRunAddress
 }
 
+// ShortenerServerAddress возвращает базовый URL для сокращенных ссылок
 func (c *Settings) ShortenerServerAddress() string {
 	return c.Server.ServerShortenerAddress
 }
 
+// ShutdownTimeout возвращает таймаут для корректного завершения работы сервера
 func (c *Settings) ShutdownTimeout() time.Duration {
 	return c.Server.ShutdownTimeout
 }

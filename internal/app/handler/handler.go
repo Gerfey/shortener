@@ -9,15 +9,17 @@ import (
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx"
+	pgx "github.com/jackc/pgx/v5"
 )
 
+// Константы для работы с куками
 const (
 	UserIDCookieName = "user_id"
 )
 
+// URLHandler обрабатывает HTTP-запросы для сервиса сокращения URL
 type URLHandler struct {
 	shortener  *service.ShortenerService
 	url        *service.URLService
@@ -25,6 +27,7 @@ type URLHandler struct {
 	repository models.Repository
 }
 
+// NewURLHandler создает новый обработчик URL
 func NewURLHandler(shortener *service.ShortenerService, url *service.URLService, s *settings.Settings, r models.Repository) *URLHandler {
 	return &URLHandler{
 		shortener:  shortener,
@@ -34,10 +37,11 @@ func NewURLHandler(shortener *service.ShortenerService, url *service.URLService,
 	}
 }
 
+// GetUserURLsHandler обрабатывает запросы для получения списка URL пользователя
 func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -65,6 +69,7 @@ func (h *URLHandler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ShortenHandler обрабатывает запросы для сокращения URL
 func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -76,7 +81,11 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
+		}
+	}()
 
 	if len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -122,6 +131,7 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// RedirectURLHandler обрабатывает запросы для перенаправления по сокращенному URL
 func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
@@ -144,6 +154,7 @@ func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// ShortenJSONHandler обрабатывает запросы для сокращения URL в формате JSON
 func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
 		URL string `json:"url"`
@@ -153,7 +164,11 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
+		}
+	}()
 
 	if request.URL == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -182,8 +197,8 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				fmt.Printf("error encoding response: %v\n", err)
+			if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+				fmt.Printf("error encoding response: %v\n", encodeErr)
 			}
 			return
 		}
@@ -203,11 +218,12 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		fmt.Printf("error encoding response: %v\n", err)
+	if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+		fmt.Printf("error encoding response: %v\n", encodeErr)
 	}
 }
 
+// ShortenBatchHandler обрабатывает запросы для пакетного сокращения URL
 func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request) {
 	var request []struct {
 		CorrelationID string `json:"correlation_id"`
@@ -218,7 +234,11 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
+		}
+	}()
 
 	if len(request) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -274,11 +294,12 @@ func (h *URLHandler) ShortenBatchHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		fmt.Printf("error encoding response: %v\n", err)
+	if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+		fmt.Printf("error encoding response: %v\n", encodeErr)
 	}
 }
 
+// PingHandler проверяет доступность хранилища данных
 func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	err := h.repository.Ping(r.Context())
 	if err != nil {
@@ -288,6 +309,7 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ShortenURLHandler обрабатывает запросы для сокращения URL
 func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -307,15 +329,15 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-			shortenerURL, err := h.url.ShortenerURL(shortenID)
-			if err != nil {
+			shortenerURL, urlErr := h.url.ShortenerURL(shortenID)
+			if urlErr != nil {
 				return
 			}
 
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusConflict)
-			_, err = w.Write([]byte(shortenerURL))
-			if err != nil {
+			_, writeErr := w.Write([]byte(shortenerURL))
+			if writeErr != nil {
 				return
 			}
 			return
@@ -338,6 +360,7 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteUserURLsHandler обрабатывает запросы для удаления URL пользователя
 func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil || cookie == nil {
@@ -350,7 +373,11 @@ func (h *URLHandler) DeleteUserURLsHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if closeErr := r.Body.Close(); closeErr != nil {
+			fmt.Printf("error closing request body: %v\n", closeErr)
+		}
+	}()
 
 	var shortURLs []string
 	if err := json.Unmarshal(body, &shortURLs); err != nil {

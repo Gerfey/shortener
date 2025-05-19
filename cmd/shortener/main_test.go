@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInitializeStorageStrategy(t *testing.T) {
@@ -45,19 +46,19 @@ func TestInitializeStorageStrategy(t *testing.T) {
 			origDBDSN := os.Getenv("DATABASE_DSN")
 			origFilePath := os.Getenv("FILE_STORAGE_PATH")
 			defer func() {
-				os.Setenv("DATABASE_DSN", origDBDSN)
-				os.Setenv("FILE_STORAGE_PATH", origFilePath)
+				_ = os.Setenv("DATABASE_DSN", origDBDSN)
+				_ = os.Setenv("FILE_STORAGE_PATH", origFilePath)
 			}()
 
 			if tt.databaseDSN != "" {
-				os.Setenv("DATABASE_DSN", tt.databaseDSN)
+				_ = os.Setenv("DATABASE_DSN", tt.databaseDSN)
 			} else {
-				os.Unsetenv("DATABASE_DSN")
+				_ = os.Unsetenv("DATABASE_DSN")
 			}
 			if tt.filePath != "" {
-				os.Setenv("FILE_STORAGE_PATH", tt.filePath)
+				_ = os.Setenv("FILE_STORAGE_PATH", tt.filePath)
 			} else {
-				os.Unsetenv("FILE_STORAGE_PATH")
+				_ = os.Unsetenv("FILE_STORAGE_PATH")
 			}
 
 			origArgs := os.Args
@@ -122,9 +123,9 @@ func TestMainWithDifferentFlags(t *testing.T) {
 				if tt.checkEnv {
 					for key, value := range origEnvVars {
 						if value != "" {
-							os.Setenv(key, value)
+							_ = os.Setenv(key, value)
 						} else {
-							os.Unsetenv(key)
+							_ = os.Unsetenv(key)
 						}
 					}
 				}
@@ -132,7 +133,7 @@ func TestMainWithDifferentFlags(t *testing.T) {
 
 			if tt.checkEnv {
 				for key, value := range tt.envVars {
-					os.Setenv(key, value)
+					_ = os.Setenv(key, value)
 				}
 				os.Args = []string{"cmd"}
 			} else {
@@ -197,8 +198,8 @@ func TestMain(t *testing.T) {
 			testMode = true
 
 			for k, v := range tc.envVars {
-				os.Setenv(k, v)
-				defer os.Unsetenv(k)
+				_ = os.Setenv(k, v)
+				defer func() { _ = os.Unsetenv(k) }()
 			}
 
 			os.Args = tc.args

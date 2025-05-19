@@ -3,14 +3,17 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresRepository хранилище URL в PostgreSQL
 type PostgresRepository struct {
 	pool DBPool
 }
 
+// NewPostgresRepository создает новое хранилище в PostgreSQL
 func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
 	repo := &PostgresRepository{
 		pool: pool,
@@ -33,6 +36,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) (*PostgresRepository, error) {
 	return repo, nil
 }
 
+// All возвращает все URL
 func (r *PostgresRepository) All(ctx context.Context) map[string]string {
 	urls := make(map[string]string)
 	rows, err := r.pool.Query(ctx, "SELECT short_url, original_url FROM urls")
@@ -52,6 +56,7 @@ func (r *PostgresRepository) All(ctx context.Context) map[string]string {
 	return urls
 }
 
+// Find ищет URL по ключу
 func (r *PostgresRepository) Find(ctx context.Context, key string) (string, bool, bool) {
 	var originalURL string
 	var isDeleted bool
@@ -64,6 +69,7 @@ func (r *PostgresRepository) Find(ctx context.Context, key string) (string, bool
 	return originalURL, true, isDeleted
 }
 
+// FindShortURL ищет короткий URL
 func (r *PostgresRepository) FindShortURL(ctx context.Context, originalURL string) (string, error) {
 	var shortURL string
 	err := r.pool.QueryRow(ctx, "SELECT short_url FROM urls WHERE original_url = $1", originalURL).Scan(&shortURL)
@@ -73,6 +79,7 @@ func (r *PostgresRepository) FindShortURL(ctx context.Context, originalURL strin
 	return shortURL, nil
 }
 
+// Save сохраняет URL в хранилище
 func (r *PostgresRepository) Save(ctx context.Context, key, value string, userID string) (string, error) {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO urls (short_url, original_url, user_id)
@@ -85,6 +92,7 @@ func (r *PostgresRepository) Save(ctx context.Context, key, value string, userID
 	return key, nil
 }
 
+// SaveBatch сохраняет пакет URL
 func (r *PostgresRepository) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -114,6 +122,7 @@ func (r *PostgresRepository) SaveBatch(ctx context.Context, urls map[string]stri
 	return nil
 }
 
+// DeleteUserURLsBatch удаляет URL пользователя
 func (r *PostgresRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs []string, userID string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -143,6 +152,7 @@ func (r *PostgresRepository) DeleteUserURLsBatch(ctx context.Context, shortURLs 
 	return nil
 }
 
+// GetUserURLs получает URL пользователя
 func (r *PostgresRepository) GetUserURLs(ctx context.Context, userID string) ([]models.URLPair, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT short_url, original_url 
@@ -166,10 +176,12 @@ func (r *PostgresRepository) GetUserURLs(ctx context.Context, userID string) ([]
 	return urls, nil
 }
 
+// Ping проверяет доступность хранилища
 func (r *PostgresRepository) Ping(ctx context.Context) error {
 	return r.pool.Ping(ctx)
 }
 
+// Close закрывает соединение с базой данных
 func (r *PostgresRepository) Close() error {
 	if r.pool != nil {
 		r.pool.Close()

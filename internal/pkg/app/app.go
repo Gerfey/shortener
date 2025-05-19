@@ -3,19 +3,21 @@ package app
 import (
 	"context"
 	"errors"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/service"
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
+// ShortenerApp основной класс приложения
 type ShortenerApp struct {
 	settings   *settings.Settings
 	router     *chi.Mux
@@ -25,6 +27,7 @@ type ShortenerApp struct {
 	repository models.Repository
 }
 
+// NewShortenerApp создает новое приложение
 func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrategy) (*ShortenerApp, error) {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -59,6 +62,7 @@ func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrateg
 	return application, nil
 }
 
+// configureRouter настраивает маршруты
 func (a *ShortenerApp) configureRouter() {
 	a.router.Route("/", func(r chi.Router) {
 		r.Post("/", middleware.AuthMiddleware(a.handler.ShortenHandler))
@@ -71,6 +75,7 @@ func (a *ShortenerApp) configureRouter() {
 	})
 }
 
+// Run запускает приложение
 func (a *ShortenerApp) Run() {
 	logrus.Printf("Starting server: %v", a.settings.ServerAddress())
 

@@ -1,11 +1,13 @@
 package middleware
 
 import (
-	"github.com/Gerfey/shortener/internal/app/compress"
 	"net/http"
 	"strings"
+
+	"github.com/Gerfey/shortener/internal/app/compress"
 )
 
+// GzipMiddleware обеспечивает сжатие ответов сервера и распаковку запросов клиента с использованием gzip
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
@@ -14,7 +16,9 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		if supportsGzip {
 			cw := compress.NewGzipWriter(w)
 			ow = cw
-			defer cw.Close()
+			defer func() {
+				_ = cw.Close()
+			}()
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -26,7 +30,9 @@ func GzipMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			r.Body = cr
-			defer cr.Close()
+			defer func() {
+				_ = cr.Close()
+			}()
 		}
 		next.ServeHTTP(ow, r)
 	})

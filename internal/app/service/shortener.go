@@ -11,18 +11,22 @@ import (
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const lenShortID = 8
 
+// ShortenerService предоставляет функциональность для сокращения URL
 type ShortenerService struct {
 	repository models.Repository
 }
 
+// NewShortenerService создает новый сервис сокращения URL
 func NewShortenerService(r models.Repository) *ShortenerService {
 	return &ShortenerService{repository: r}
 }
 
+// SaveBatch сохраняет несколько URL в пакетном режиме
 func (s *ShortenerService) SaveBatch(ctx context.Context, urls map[string]string, userID string) error {
 	return s.repository.SaveBatch(ctx, urls, userID)
 }
 
+// GetShortURL возвращает короткий URL для указанного оригинального URL
 func (s *ShortenerService) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	shortURL, err := s.repository.FindShortURL(ctx, originalURL)
 	if err != nil {
@@ -31,6 +35,7 @@ func (s *ShortenerService) GetShortURL(ctx context.Context, originalURL string) 
 	return shortURL, nil
 }
 
+// ShortenID создает короткий идентификатор для указанного URL
 func (s *ShortenerService) ShortenID(ctx context.Context, url string, userID string) (string, error) {
 	existingShortURL, err := s.repository.FindShortURL(ctx, url)
 	if err == nil {
@@ -46,6 +51,7 @@ func (s *ShortenerService) ShortenID(ctx context.Context, url string, userID str
 	return shortID, nil
 }
 
+// FindURL ищет оригинальный URL по короткому идентификатору
 func (s *ShortenerService) FindURL(ctx context.Context, code string) (string, error) {
 	url, exists, _ := s.repository.Find(ctx, code)
 	if !exists {
@@ -54,6 +60,7 @@ func (s *ShortenerService) FindURL(ctx context.Context, code string) (string, er
 	return url, nil
 }
 
+// generateShortID генерирует случайный идентификатор указанной длины
 func generateShortID(length int) string {
 	b := make([]byte, length)
 	for i := range b {

@@ -45,7 +45,7 @@ func TestGzipMiddlewareWithCompression(t *testing.T) {
 
 	reader, err := gzip.NewReader(rr.Body)
 	assert.NoError(t, err)
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	content, err := io.ReadAll(reader)
 	assert.NoError(t, err)

@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// Flags содержит флаги командной строки
 type Flags struct {
 	FlagServerRunAddress       string
 	FlagServerShortenerAddress string

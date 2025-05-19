@@ -1,22 +1,46 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/app/strategy"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/Gerfey/shortener/internal/pkg/app"
 	"github.com/sirupsen/logrus"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
-	testMode   = false
-	testDoneCh = make(chan struct{})
+	testMode     = false
+	testDoneCh   = make(chan struct{})
+	buildVersion string
+	buildDate    string
+	buildCommit  string
 )
 
 func main() {
+	version := buildVersion
+	if version == "" {
+		version = "N/A"
+	}
+
+	date := buildDate
+	if date == "" {
+		date = "N/A"
+	}
+
+	commit := buildCommit
+	if commit == "" {
+		commit = "N/A"
+	}
+
+	fmt.Printf("Build version: %s\n", version)
+	fmt.Printf("Build date: %s\n", date)
+	fmt.Printf("Build commit: %s\n", commit)
+
 	flags := parseFlags(os.Args[1:])
 
 	appSettings := settings.NewSettings(

@@ -12,7 +12,7 @@ import (
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/mock"
 	"github.com/Gerfey/shortener/internal/models"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -249,12 +249,14 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 		userID       string
 		expectedCode int
 		mockSetup    func()
+		withCookie   bool
 		expectedURLs []models.URLPair
 	}{
 		{
 			name:         "Success with URLs",
 			userID:       "user123",
 			expectedCode: http.StatusOK,
+			withCookie:   true,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					GetUserURLs(gomock.Any(), "user123").
@@ -272,11 +274,19 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 			name:         "No URLs Found",
 			userID:       "user456",
 			expectedCode: http.StatusNoContent,
+			withCookie:   true,
 			mockSetup: func() {
 				mockRepo.EXPECT().
 					GetUserURLs(gomock.Any(), "user456").
 					Return([]models.URLPair{}, nil)
 			},
+			expectedURLs: nil,
+		},
+		{
+			name:         "No Cookie",
+			expectedCode: http.StatusNoContent,
+			withCookie:   false,
+			mockSetup:    func() {},
 			expectedURLs: nil,
 		},
 	}
@@ -286,7 +296,9 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 			tt.mockSetup()
 
 			req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
-			req.AddCookie(&http.Cookie{Name: UserIDCookieName, Value: tt.userID})
+			if tt.withCookie {
+				req.AddCookie(&http.Cookie{Name: UserIDCookieName, Value: tt.userID})
+			}
 			w := httptest.NewRecorder()
 
 			handler.GetUserURLsHandler(w, req)

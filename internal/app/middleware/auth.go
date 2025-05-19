@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/google/uuid"
-	"net/http"
 )
 
+// AuthMiddleware проверяет наличие куки с идентификатором пользователя и создает её, если она отсутствует
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(handler.UserIDCookieName)

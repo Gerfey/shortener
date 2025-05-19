@@ -192,8 +192,8 @@ func TestFileRepository_DeleteUserURLsBatch(t *testing.T) {
 	}
 
 	for _, u := range urls {
-		_, err := repo.Save(context.Background(), u.shortURL, u.originalURL, u.userID)
-		assert.NoError(t, err)
+		_, saveErr := repo.Save(context.Background(), u.shortURL, u.originalURL, u.userID)
+		assert.NoError(t, saveErr)
 	}
 
 	err = repo.DeleteUserURLsBatch(context.Background(), []string{"abc123", "def456"}, "user1")

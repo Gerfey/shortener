@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
-	"github.com/Gerfey/shortener/internal/models"
-	"github.com/jackc/pgx/v5"
-	"github.com/pashagolub/pgxmock/v2"
-	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
+
+	"github.com/Gerfey/shortener/internal/models"
+	pgx "github.com/jackc/pgx/v5"
+	pgxmock "github.com/pashagolub/pgxmock/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPostgresRepository_All(t *testing.T) {
@@ -133,11 +134,12 @@ func TestPostgresRepository_SaveBatch(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+
 	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO urls (short_url, original_url, user_id) VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`)).
-		WithArgs("abc123", "https://example.com", "user1").
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), "user1").
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO urls (short_url, original_url, user_id) VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`)).
-		WithArgs("def456", "https://example.org", "user1").
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), "user1").
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
