@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/app/strategy"
@@ -68,14 +66,16 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	appDone := make(chan struct{})
 
-	application.Run()
+	go func() {
+		application.Run()
+		appDone <- struct{}{}
+	}()
 
 	select {
-	case <-sigChan:
-		logrus.Info("Получен сигнал завершения")
+	case <-appDone:
+		logrus.Info("Приложение завершило работу")
 	case <-testDoneCh:
 		if testMode {
 			logrus.Info("Завершение в тестовом режиме")
