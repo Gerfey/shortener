@@ -82,27 +82,43 @@ func (a *ShortenerApp) Run() {
 	a.configureRouter()
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
-		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		var err error
+
+		if a.settings.Server.EnableHTTPS {
+			logrus.Info("HTTPS enabled, using TLS")
+			err = a.server.ListenAndServeTLS(a.settings.Server.CertFile, a.settings.Server.KeyFile)
+		} else {
+			err = a.server.ListenAndServe()
+		}
+
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logrus.Fatal(err)
 		}
 	}()
 
-	<-stop
-	logrus.Info("Shutting down server...")
+	sig := <-stop
+	logrus.Infof("Получен сигнал завершения: %v", sig)
+	logrus.Info("Начинаем корректное завершение работы сервера...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), a.settings.ShutdownTimeout())
 	defer cancel()
 
+	logrus.Info("Ожидаем завершения всех обрабатываемых запросов...")
 	if err := a.server.Shutdown(ctx); err != nil {
-		logrus.Error("Server forced to shutdown:", err)
+		logrus.Error("Сервер принудительно завершен:", err)
+	} else {
+		logrus.Info("Все запросы успешно обработаны")
 	}
 
+	logrus.Info("Сохраняем данные и закрываем хранилище...")
 	if err := a.strategy.Close(); err != nil {
-		logrus.Error("Error closing storage:", err)
+		logrus.Error("Ошибка при закрытии хранилища:", err)
+	} else {
+		logrus.Info("Хранилище успешно закрыто")
 	}
 
-	logrus.Info("Server stopped")
+	logrus.Info("Сервер успешно остановлен")
 }

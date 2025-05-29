@@ -9,6 +9,9 @@ type ServerSettings struct {
 	DefaultFilePath        string
 	DefaultDatabaseDSN     string
 	ShutdownTimeout        time.Duration
+	EnableHTTPS            bool
+	CertFile               string
+	KeyFile                string
 }
 
 // Settings объединяет все настройки приложения
@@ -25,6 +28,9 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 			DefaultFilePath:        serverSettings.DefaultFilePath,
 			DefaultDatabaseDSN:     serverSettings.DefaultDatabaseDSN,
 			ShutdownTimeout:        serverSettings.ShutdownTimeout,
+			EnableHTTPS:            serverSettings.EnableHTTPS,
+			CertFile:               serverSettings.CertFile,
+			KeyFile:                serverSettings.KeyFile,
 		},
 	}
 }
