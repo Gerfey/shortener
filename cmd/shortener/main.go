@@ -49,6 +49,9 @@ func main() {
 			ServerShortenerAddress: flags.FlagServerShortenerAddress,
 			DefaultFilePath:        flags.FlagDefaultFilePath,
 			DefaultDatabaseDSN:     flags.FlagDefaultDatabaseDSN,
+			EnableHTTPS:            flags.FlagEnableHTTPS,
+			CertFile:               flags.FlagCertFile,
+			KeyFile:                flags.FlagKeyFile,
 		})
 
 	var storageStrategy models.StorageStrategy

@@ -85,7 +85,16 @@ func (a *ShortenerApp) Run() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		var err error
+
+		if a.settings.Server.EnableHTTPS {
+			logrus.Info("HTTPS enabled, using TLS")
+			err = a.server.ListenAndServeTLS(a.settings.Server.CertFile, a.settings.Server.KeyFile)
+		} else {
+			err = a.server.ListenAndServe()
+		}
+
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logrus.Fatal(err)
 		}
 	}()
