@@ -15,6 +15,7 @@ import (
 	"github.com/Gerfey/shortener/internal/models"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // ShortenerApp основной класс приложения
@@ -88,8 +89,15 @@ func (a *ShortenerApp) Run() {
 		var err error
 
 		if a.settings.Server.EnableHTTPS {
-			logrus.Info("HTTPS enabled, using TLS")
-			err = a.server.ListenAndServeTLS(a.settings.Server.CertFile, a.settings.Server.KeyFile)
+			logrus.Info("HTTPS enabled")
+
+			manager := &autocert.Manager{
+				Cache:  autocert.DirCache("certs-cache"),
+				Prompt: autocert.AcceptTOS,
+			}
+
+			a.server.TLSConfig = manager.TLSConfig()
+			err = a.server.ListenAndServeTLS("", "")
 		} else {
 			err = a.server.ListenAndServe()
 		}

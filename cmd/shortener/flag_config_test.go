@@ -20,8 +20,6 @@ func TestParseFlags_WithConfigFile(t *testing.T) {
 		FileStoragePath: "/tmp/short-url-db.json",
 		DatabaseDSN:     "postgres://user:password@localhost:5432/shortener",
 		EnableHTTPS:     true,
-		CertFile:        "config.crt",
-		KeyFile:         "config.key",
 	}
 
 	configJSON, err := json.Marshal(configData)
@@ -37,8 +35,6 @@ func TestParseFlags_WithConfigFile(t *testing.T) {
 	assert.Equal(t, "/tmp/short-url-db.json", flags.FlagDefaultFilePath)
 	assert.Equal(t, "postgres://user:password@localhost:5432/shortener", flags.FlagDefaultDatabaseDSN)
 	assert.True(t, flags.FlagEnableHTTPS)
-	assert.Equal(t, "config.crt", flags.FlagCertFile)
-	assert.Equal(t, "config.key", flags.FlagKeyFile)
 }
 
 func TestParseFlags_ConfigPriority(t *testing.T) {

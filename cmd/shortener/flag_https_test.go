@@ -37,24 +37,3 @@ func TestParseFlags_WithHTTPSAndServerAddrEnv(t *testing.T) {
 	assert.True(t, flags.FlagEnableHTTPS)
 	assert.Equal(t, ":8888", flags.FlagServerRunAddress)
 }
-
-func TestParseFlags_WithCertKeyFlags(t *testing.T) {
-	flags := parseFlags([]string{"-cert=custom.crt", "-key=custom.key"})
-
-	assert.Equal(t, "custom.crt", flags.FlagCertFile)
-	assert.Equal(t, "custom.key", flags.FlagKeyFile)
-}
-
-func TestParseFlags_WithCertKeyEnv(t *testing.T) {
-	_ = os.Setenv("CERT_FILE", "env.crt")
-	_ = os.Setenv("KEY_FILE", "env.key")
-	defer func() {
-		_ = os.Unsetenv("CERT_FILE")
-		_ = os.Unsetenv("KEY_FILE")
-	}()
-
-	flags := parseFlags([]string{})
-
-	assert.Equal(t, "env.crt", flags.FlagCertFile)
-	assert.Equal(t, "env.key", flags.FlagKeyFile)
-}

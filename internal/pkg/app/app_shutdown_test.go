@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/app/strategy"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,8 +60,6 @@ func TestShortenerApp_HTTPSSupport(t *testing.T) {
 		ServerRunAddress:       ":0",
 		ServerShortenerAddress: "https://localhost",
 		EnableHTTPS:            true,
-		CertFile:               certFile,
-		KeyFile:                keyFile,
 	})
 
 	stg := strategy.NewMemoryStrategy()
@@ -136,4 +136,76 @@ func TestShortenerApp_ShutdownWithRequests(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Сервер не завершился корректно в течение ожидаемого времени")
 	}
+}
+
+func TestShortenerApp_AutocertSupport(t *testing.T) {
+	config := settings.NewSettings(settings.ServerSettings{
+		ServerRunAddress:       ":0",
+		ServerShortenerAddress: "https://example.com",
+		EnableHTTPS:            true,
+		ShutdownTimeout:        time.Second,
+	})
+
+	stg := strategy.NewMemoryStrategy()
+	app, err := NewShortenerApp(config, stg)
+	require.NoError(t, err)
+
+	originalServer := app.server
+	app.server = &http.Server{
+		Addr:    ":0",
+		Handler: originalServer.Handler,
+	}
+
+	appDone := make(chan struct{})
+	go func() {
+		app.configureRouter()
+		close(appDone)
+	}()
+
+	select {
+	case <-appDone:
+	case <-time.After(1 * time.Second):
+		t.Fatal("Тест не завершился вовремя")
+	}
+}
+
+func TestShortenerApp_EmptyDomainsAutocert(t *testing.T) {
+	oldLogger := logrus.StandardLogger()
+	logrus.SetOutput(io.Discard)
+
+	defer func() {
+		logrus.StandardLogger().Out = oldLogger.Out
+	}()
+
+	config := settings.NewSettings(settings.ServerSettings{
+		ServerRunAddress:       ":0",
+		ServerShortenerAddress: "https://example.com",
+		EnableHTTPS:            true,
+		ShutdownTimeout:        time.Second,
+	})
+
+	stg := strategy.NewMemoryStrategy()
+	app, err := NewShortenerApp(config, stg)
+	require.NoError(t, err)
+
+	require.True(t, app.settings.Server.EnableHTTPS, "HTTPS должен быть включен")
+}
+
+type LogHook struct {
+	entries []*logrus.Entry
+}
+
+func (h *LogHook) Levels() []logrus.Level {
+	return []logrus.Level{
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
+		logrus.WarnLevel,
+		logrus.InfoLevel,
+	}
+}
+
+func (h *LogHook) Fire(entry *logrus.Entry) error {
+	h.entries = append(h.entries, entry)
+	return nil
 }

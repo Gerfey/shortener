@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/app/strategy"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/Gerfey/shortener/internal/pkg/app"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 var (
@@ -48,8 +47,6 @@ func main() {
 			DefaultFilePath:        flags.FlagDefaultFilePath,
 			DefaultDatabaseDSN:     flags.FlagDefaultDatabaseDSN,
 			EnableHTTPS:            flags.FlagEnableHTTPS,
-			CertFile:               flags.FlagCertFile,
-			KeyFile:                flags.FlagKeyFile,
 		})
 
 	var storageStrategy models.StorageStrategy

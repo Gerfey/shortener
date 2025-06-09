@@ -174,8 +174,8 @@ func TestMain(t *testing.T) {
 			name: "Default configuration",
 			args: []string{"shortener"},
 			envVars: map[string]string{
-				"SERVER_ADDRESS":    ":8080",
-				"BASE_URL":          "http://localhost:8080",
+				"SERVER_ADDRESS":    ":0",
+				"BASE_URL":          "http://localhost:9090",
 				"FILE_STORAGE_PATH": "",
 				"DATABASE_DSN":      "",
 			},
@@ -184,8 +184,8 @@ func TestMain(t *testing.T) {
 			name: "With file storage",
 			args: []string{"shortener", "-f", "/tmp/test.json"},
 			envVars: map[string]string{
-				"SERVER_ADDRESS":    ":8081",
-				"BASE_URL":          "http://localhost:8081",
+				"SERVER_ADDRESS":    ":0",
+				"BASE_URL":          "http://localhost",
 				"FILE_STORAGE_PATH": "/tmp/test.json",
 				"DATABASE_DSN":      "",
 			},

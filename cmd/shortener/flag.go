@@ -13,8 +13,6 @@ type Config struct {
 	FileStoragePath string `json:"file_storage_path"`
 	DatabaseDSN     string `json:"database_dsn"`
 	EnableHTTPS     bool   `json:"enable_https"`
-	CertFile        string `json:"cert_file,omitempty"`
-	KeyFile         string `json:"key_file,omitempty"`
 }
 
 // Flags содержит флаги командной строки
@@ -24,13 +22,11 @@ type Flags struct {
 	FlagDefaultFilePath        string
 	FlagDefaultDatabaseDSN     string
 	FlagEnableHTTPS            bool
-	FlagCertFile               string
-	FlagKeyFile                string
 	FlagConfigFile             string
 }
 
 func parseFlags(args []string) Flags {
-	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagCertFile, flagKeyFile, flagConfigFile string
+	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagConfigFile string
 	var flagEnableHTTPS bool
 
 	fs := flag.NewFlagSet("shortener", flag.ExitOnError)
@@ -40,8 +36,6 @@ func parseFlags(args []string) Flags {
 	fs.StringVar(&flagDefaultFilePath, "f", "", "Path to the file where URLs are stored")
 	fs.StringVar(&flagDefaultDatabaseDSN, "d", "", "Database connection DSN")
 	fs.BoolVar(&flagEnableHTTPS, "s", false, "Enable HTTPS")
-	fs.StringVar(&flagCertFile, "cert", "server.crt", "Path to TLS certificate file")
-	fs.StringVar(&flagKeyFile, "key", "server.key", "Path to TLS key file")
 	fs.StringVar(&flagConfigFile, "c", "", "Path to configuration file")
 	fs.StringVar(&flagConfigFile, "config", "", "Path to configuration file (shorthand for -c)")
 
@@ -73,12 +67,6 @@ func parseFlags(args []string) Flags {
 				if !flagEnableHTTPS && config.EnableHTTPS {
 					flagEnableHTTPS = config.EnableHTTPS
 				}
-				if flagCertFile == "server.crt" && config.CertFile != "" {
-					flagCertFile = config.CertFile
-				}
-				if flagKeyFile == "server.key" && config.KeyFile != "" {
-					flagKeyFile = config.KeyFile
-				}
 			}
 		}
 	}
@@ -109,13 +97,5 @@ func parseFlags(args []string) Flags {
 		flagEnableHTTPS = true
 	}
 
-	if envCertFile := os.Getenv("CERT_FILE"); envCertFile != "" {
-		flagCertFile = envCertFile
-	}
-
-	if envKeyFile := os.Getenv("KEY_FILE"); envKeyFile != "" {
-		flagKeyFile = envKeyFile
-	}
-
-	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagEnableHTTPS, flagCertFile, flagKeyFile, flagConfigFile}
+	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagEnableHTTPS, flagConfigFile}
 }
