@@ -64,12 +64,20 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	appDone := make(chan struct{})
+
 	go func() {
 		application.Run()
+		appDone <- struct{}{}
 	}()
 
-	<-testDoneCh
-	if testMode {
-		logrus.Info("Завершение в тестовом режиме")
+	select {
+	case <-appDone:
+		logrus.Info("Приложение завершило работу")
+	case <-testDoneCh:
+		if testMode {
+			logrus.Info("Завершение в тестовом режиме")
+			return
+		}
 	}
 }
