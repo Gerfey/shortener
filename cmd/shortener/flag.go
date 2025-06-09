@@ -21,6 +21,7 @@ type Config struct {
 type Flags struct {
 	FlagServerRunAddress       string
 	FlagServerShortenerAddress string
+	FlagGRPCRunAddress         string
 	FlagDefaultFilePath        string
 	FlagDefaultDatabaseDSN     string
 	FlagEnableHTTPS            bool
@@ -32,10 +33,11 @@ func parseFlags(args []string) Flags {
 	const (
 		defaultServerAddress = ":8081"
 		defaultBaseURL       = "http://localhost:8080"
+		defaultGRPCAddress   = ":50051"
 		httpsServerAddress   = ":443"
 	)
 
-	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagConfigFile, flagTrustedSubnet string
+	var flagServerRunAddress, flagServerShortenerAddress, flagGRPCRunAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagConfigFile, flagTrustedSubnet string
 	var flagEnableHTTPS bool
 
 	envConfigFile := os.Getenv("CONFIG")
@@ -45,6 +47,7 @@ func parseFlags(args []string) Flags {
 
 	fs.StringVar(&flagServerRunAddress, "a", defaultServerAddress, "Run server address and port")
 	fs.StringVar(&flagServerShortenerAddress, "b", defaultBaseURL, "Base URL for shortened URLs")
+	fs.StringVar(&flagGRPCRunAddress, "g", defaultGRPCAddress, "Run gRPC server address and port")
 	fs.StringVar(&flagDefaultFilePath, "f", "", "Path to the file where URLs are stored")
 	fs.StringVar(&flagDefaultDatabaseDSN, "d", "", "Database connection DSN")
 	fs.BoolVar(&flagEnableHTTPS, "s", false, "Enable HTTPS")
@@ -80,6 +83,18 @@ func parseFlags(args []string) Flags {
 	envDatabaseDSN := os.Getenv("DATABASE_DSN")
 	envEnableHTTPS := os.Getenv("ENABLE_HTTPS") == "true"
 
+	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
+		flagServerRunAddress = envServerAddress
+	}
+
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		flagServerShortenerAddress = envBaseURL
+	}
+
+	if envGRPCAddress := os.Getenv("GRPC_ADDRESS"); envGRPCAddress != "" {
+		flagGRPCRunAddress = envGRPCAddress
+	}
+
 	serverRunAddress := cmp.Or(envServerAddress, configServerAddress, flagServerRunAddress, defaultServerAddress)
 	baseURL := cmp.Or(envBaseURL, configBaseURL, flagServerShortenerAddress, defaultBaseURL)
 	fileStoragePath := cmp.Or(envFilePath, configFileStoragePath, flagDefaultFilePath)
@@ -94,6 +109,7 @@ func parseFlags(args []string) Flags {
 	return Flags{
 		FlagServerRunAddress:       serverRunAddress,
 		FlagServerShortenerAddress: baseURL,
+		FlagGRPCRunAddress:         flagGRPCRunAddress,
 		FlagDefaultFilePath:        fileStoragePath,
 		FlagDefaultDatabaseDSN:     databaseDSN,
 		FlagEnableHTTPS:            enableHTTPS,

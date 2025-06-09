@@ -49,7 +49,7 @@ func TestFlagParsing(t *testing.T) {
 func TestParseFlags_Defaults(t *testing.T) {
 	flags := parseFlags([]string{})
 
-	assert.Equal(t, ":8080", flags.FlagServerRunAddress)
+	assert.Equal(t, ":8081", flags.FlagServerRunAddress)
 	assert.Equal(t, "http://localhost:8080", flags.FlagServerShortenerAddress)
 	assert.Equal(t, "", flags.FlagDefaultFilePath)
 	assert.Equal(t, "", flags.FlagDefaultDatabaseDSN)

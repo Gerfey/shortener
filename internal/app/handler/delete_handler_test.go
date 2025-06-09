@@ -24,8 +24,7 @@ func TestURLHandler_DeleteUserURLsHandler(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name         string

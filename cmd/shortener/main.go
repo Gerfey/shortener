@@ -45,6 +45,7 @@ func main() {
 		settings.ServerSettings{
 			ServerRunAddress:       flags.FlagServerRunAddress,
 			ServerShortenerAddress: flags.FlagServerShortenerAddress,
+			GRPCRunAddress:         flags.FlagGRPCRunAddress,
 			DefaultFilePath:        flags.FlagDefaultFilePath,
 			DefaultDatabaseDSN:     flags.FlagDefaultDatabaseDSN,
 			EnableHTTPS:            flags.FlagEnableHTTPS,

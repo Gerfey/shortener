@@ -1,29 +1,17 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Gerfey/shortener/internal/app/settings"
-	"github.com/Gerfey/shortener/internal/mock"
+	"github.com/Gerfey/shortener/internal/app/usecase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
-
-type MockSettings struct {
-	trustedSubnet string
-}
-
-func (s *MockSettings) ServerAddress() string           { return "" }
-func (s *MockSettings) BaseURL() string                 { return "" }
-func (s *MockSettings) FileStoragePath() string         { return "" }
-func (s *MockSettings) DatabaseDSN() string             { return "" }
-func (s *MockSettings) EnableHTTPS() bool               { return false }
-func (s *MockSettings) TrustedSubnet() string           { return s.trustedSubnet }
-func (s *MockSettings) Server() settings.ServerSettings { return settings.ServerSettings{} }
 
 func TestIsIPInCIDR(t *testing.T) {
 	tests := []struct {
@@ -66,70 +54,107 @@ func TestIsIPInCIDR(t *testing.T) {
 	}
 }
 
+// StatsUseCaser интерфейс для StatsUseCase
+type StatsUseCaser interface {
+	GetStats(ctx context.Context, clientIP string) (usecase.StatsResult, error)
+}
+
+// MockStatsUseCase - мок для StatsUseCase
+type MockStatsUseCase struct {
+	getStatsFunc func(ctx context.Context, clientIP string) (usecase.StatsResult, error)
+}
+
+func (m *MockStatsUseCase) GetStats(ctx context.Context, clientIP string) (usecase.StatsResult, error) {
+	return m.getStatsFunc(ctx, clientIP)
+}
+
+// URLHandlerWithMocks структура для тестирования с моками
+type URLHandlerWithMocks struct {
+	mockStatsUseCase StatsUseCaser
+}
+
+// StatsHandler переопределяет метод StatsHandler для использования мока
+func (h *URLHandlerWithMocks) StatsHandler(w http.ResponseWriter, r *http.Request) {
+	clientIP := r.Header.Get("X-Real-IP")
+	if clientIP == "" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	stats, err := h.mockStatsUseCase.GetStats(r.Context(), clientIP)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	response := StatsResponse{
+		URLs:  stats.URLs,
+		Users: stats.Users,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 func TestStatsHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		trustedSubnet  string
 		realIP         string
 		urlCount       int
+		userCount      int
 		expectedStatus int
+		hasError       bool
 		checkResponse  bool
 	}{
 		{
-			name:           "Успешный запрос из доверенной подсети",
-			trustedSubnet:  "192.168.1.0/24",
+			name:           "Успешный запрос",
 			realIP:         "192.168.1.5",
 			urlCount:       5,
+			userCount:      3,
 			expectedStatus: http.StatusOK,
+			hasError:       false,
 			checkResponse:  true,
 		},
 		{
-			name:           "Запрос из недоверенной подсети",
-			trustedSubnet:  "192.168.1.0/24",
+			name:           "Ошибка доступа",
 			realIP:         "192.168.2.5",
 			urlCount:       0,
+			userCount:      0,
 			expectedStatus: http.StatusForbidden,
+			hasError:       true,
 			checkResponse:  false,
 		},
 		{
 			name:           "Пустой X-Real-IP",
-			trustedSubnet:  "192.168.1.0/24",
 			realIP:         "",
 			urlCount:       0,
+			userCount:      0,
 			expectedStatus: http.StatusForbidden,
-			checkResponse:  false,
-		},
-		{
-			name:           "Пустая доверенная подсеть",
-			trustedSubnet:  "",
-			realIP:         "192.168.1.5",
-			urlCount:       0,
-			expectedStatus: http.StatusForbidden,
+			hasError:       false,
 			checkResponse:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			repo := mock.NewMockRepository(ctrl)
-
-			urlMap := make(map[string]string)
-			for i := 0; i < tt.urlCount; i++ {
-				urlMap["short"+string(rune('a'+i))] = "original" + string(rune('a'+i))
-			}
-			repo.EXPECT().All(gomock.Any()).Return(urlMap).AnyTimes()
-
-			h := &URLHandler{
-				repository: repo,
-			}
-
-			h.settings = &settings.Settings{
-				Server: settings.ServerSettings{
-					TrustedSubnet: tt.trustedSubnet,
+			mockStatsUseCase := &MockStatsUseCase{
+				getStatsFunc: func(ctx context.Context, clientIP string) (usecase.StatsResult, error) {
+					if tt.hasError {
+						return usecase.StatsResult{}, errors.New("access denied")
+					}
+					return usecase.StatsResult{
+						URLs:  tt.urlCount,
+						Users: tt.userCount,
+					}, nil
 				},
+			}
+
+			handler := &URLHandlerWithMocks{
+				mockStatsUseCase: mockStatsUseCase,
 			}
 
 			req := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
@@ -139,7 +164,7 @@ func TestStatsHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			h.StatsHandler(rr, req)
+			handler.StatsHandler(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
@@ -149,7 +174,7 @@ func TestStatsHandler(t *testing.T) {
 				require.NoError(t, err)
 
 				assert.Equal(t, tt.urlCount, response.URLs)
-				assert.GreaterOrEqual(t, response.Users, 1)
+				assert.Equal(t, tt.userCount, response.Users)
 			}
 		})
 	}

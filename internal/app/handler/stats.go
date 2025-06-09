@@ -14,27 +14,21 @@ type StatsResponse struct {
 
 // StatsHandler обрабатывает запросы для получения статистики сервиса
 func (h *URLHandler) StatsHandler(w http.ResponseWriter, r *http.Request) {
-	if h.settings.TrustedSubnet() == "" {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	clientIP := r.Header.Get("X-Real-IP")
 	if clientIP == "" {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	if !isIPInCIDR(clientIP, h.settings.TrustedSubnet()) {
+	stats, err := h.statsUseCase.GetStats(r.Context(), clientIP)
+	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	urls, users := h.getStats(r)
-
 	response := StatsResponse{
-		URLs:  urls,
-		Users: users,
+		URLs:  stats.URLs,
+		Users: stats.Users,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -60,18 +54,4 @@ func isIPInCIDR(ipStr, cidrStr string) bool {
 	return ipNet.Contains(ip)
 }
 
-// getStats возвращает статистику по количеству URL и пользователей
-func (h *URLHandler) getStats(r *http.Request) (int, int) {
-	allURLs := h.repository.All(r.Context())
 
-	users := make(map[string]struct{})
-
-	users["user"] = struct{}{}
-
-	userCount := len(users)
-	if userCount == 0 {
-		userCount = 1
-	}
-
-	return len(allURLs), userCount
-}

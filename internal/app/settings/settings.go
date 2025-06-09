@@ -6,6 +6,7 @@ import "time"
 type ServerSettings struct {
 	ServerRunAddress       string
 	ServerShortenerAddress string
+	GRPCRunAddress         string
 	DefaultFilePath        string
 	DefaultDatabaseDSN     string
 	ShutdownTimeout        time.Duration
@@ -24,6 +25,7 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 		Server: ServerSettings{
 			ServerRunAddress:       serverSettings.ServerRunAddress,
 			ServerShortenerAddress: serverSettings.ServerShortenerAddress,
+			GRPCRunAddress:         serverSettings.GRPCRunAddress,
 			DefaultFilePath:        serverSettings.DefaultFilePath,
 			DefaultDatabaseDSN:     serverSettings.DefaultDatabaseDSN,
 			ShutdownTimeout:        serverSettings.ShutdownTimeout,
@@ -51,4 +53,14 @@ func (c *Settings) ShutdownTimeout() time.Duration {
 // TrustedSubnet возвращает доверенную подсеть для доступа к статистике
 func (c *Settings) TrustedSubnet() string {
 	return c.Server.TrustedSubnet
+}
+
+// GRPCAddress возвращает адрес для запуска gRPC-сервера
+func (c *Settings) GRPCAddress() string {
+	return c.Server.GRPCRunAddress
+}
+
+// BaseURL возвращает базовый URL для формирования полных URL
+func (c *Settings) BaseURL() string {
+	return c.Server.ServerShortenerAddress
 }

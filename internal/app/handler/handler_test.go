@@ -27,8 +27,8 @@ func TestURLHandler_ShortenURL(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name          string
@@ -91,8 +91,8 @@ func TestURLHandler_GetOriginalURL(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name         string
@@ -165,8 +165,8 @@ func TestURLHandler_ShortenURLJSON(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name           string
@@ -241,8 +241,8 @@ func TestURLHandler_GetUserURLs(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name         string
@@ -325,8 +325,8 @@ func TestURLHandler_DeleteUserURLs(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name         string
@@ -375,8 +375,8 @@ func TestURLHandler_Ping(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	tests := []struct {
 		name         string

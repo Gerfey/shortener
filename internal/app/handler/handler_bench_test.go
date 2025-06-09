@@ -26,8 +26,7 @@ func BenchmarkShortenHandler(b *testing.B) {
 
 	repo := repository.NewMemoryRepository()
 	shortenerService := service.NewShortenerService(repo)
-	urlService := service.NewURLService(s)
-	handler := NewURLHandler(shortenerService, urlService, s, repo)
+	handler := NewURLHandler(shortenerService, s, repo)
 
 	originalURL := "https://example.com/very/long/url/path/to/some/resource?param1=value1&param2=value2"
 
@@ -53,8 +52,7 @@ func BenchmarkRedirectURLHandler(b *testing.B) {
 
 	repo := repository.NewMemoryRepository()
 	shortenerService := service.NewShortenerService(repo)
-	urlService := service.NewURLService(s)
-	handler := NewURLHandler(shortenerService, urlService, s, repo)
+	handler := NewURLHandler(shortenerService, s, repo)
 
 	originalURL := "https://example.com/very/long/url/path/to/some/resource?param1=value1&param2=value2"
 	userID := "test-user-id"
