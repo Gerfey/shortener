@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"flag"
 	"os"
@@ -26,76 +27,70 @@ type Flags struct {
 }
 
 func parseFlags(args []string) Flags {
+	const (
+		defaultServerAddress = ":8080"
+		defaultBaseURL       = "http://localhost:8080"
+		httpsServerAddress   = ":443"
+	)
+
 	var flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagConfigFile string
 	var flagEnableHTTPS bool
 
+	envConfigFile := os.Getenv("CONFIG")
+
 	fs := flag.NewFlagSet("shortener", flag.ExitOnError)
 
-	fs.StringVar(&flagServerRunAddress, "a", ":8080", "Run server address and port")
-	fs.StringVar(&flagServerShortenerAddress, "b", "http://localhost:8080", "Run server address and port")
+	fs.StringVar(&flagServerRunAddress, "a", defaultServerAddress, "Run server address and port")
+	fs.StringVar(&flagServerShortenerAddress, "b", defaultBaseURL, "Base URL for shortened URLs")
 	fs.StringVar(&flagDefaultFilePath, "f", "", "Path to the file where URLs are stored")
 	fs.StringVar(&flagDefaultDatabaseDSN, "d", "", "Database connection DSN")
 	fs.BoolVar(&flagEnableHTTPS, "s", false, "Enable HTTPS")
 	fs.StringVar(&flagConfigFile, "c", "", "Path to configuration file")
 	fs.StringVar(&flagConfigFile, "config", "", "Path to configuration file (shorthand for -c)")
 
-	if err := fs.Parse(args); err != nil {
-		return Flags{}
-	}
+	_ = fs.Parse(args)
 
-	if envConfigFile := os.Getenv("CONFIG"); envConfigFile != "" {
-		flagConfigFile = envConfigFile
-	}
+	var configServerAddress, configBaseURL, configFileStoragePath, configDatabaseDSN string
+	var configEnableHTTPS bool
 
-	if flagConfigFile != "" {
-		configData, err := os.ReadFile(flagConfigFile)
+	configPath := cmp.Or(envConfigFile, flagConfigFile)
+
+	if configPath != "" {
+		var config Config
+		configFile, err := os.ReadFile(configPath)
 		if err == nil {
-			var config Config
-			if err := json.Unmarshal(configData, &config); err == nil {
-				if flagServerRunAddress == ":8080" && config.ServerAddress != "" {
-					flagServerRunAddress = config.ServerAddress
-				}
-				if flagServerShortenerAddress == "http://localhost:8080" && config.BaseURL != "" {
-					flagServerShortenerAddress = config.BaseURL
-				}
-				if flagDefaultFilePath == "" && config.FileStoragePath != "" {
-					flagDefaultFilePath = config.FileStoragePath
-				}
-				if flagDefaultDatabaseDSN == "" && config.DatabaseDSN != "" {
-					flagDefaultDatabaseDSN = config.DatabaseDSN
-				}
-				if !flagEnableHTTPS && config.EnableHTTPS {
-					flagEnableHTTPS = config.EnableHTTPS
-				}
+			if err = json.Unmarshal(configFile, &config); err == nil {
+				configServerAddress = config.ServerAddress
+				configBaseURL = config.BaseURL
+				configFileStoragePath = config.FileStoragePath
+				configDatabaseDSN = config.DatabaseDSN
+				configEnableHTTPS = config.EnableHTTPS
 			}
 		}
 	}
 
-	if flagEnableHTTPS {
-		if flagServerRunAddress == ":8080" {
-			flagServerRunAddress = ":443"
-		}
+	envServerAddress := os.Getenv("SERVER_ADDRESS")
+	envBaseURL := os.Getenv("BASE_URL")
+	envFilePath := os.Getenv("FILE_STORAGE_PATH")
+	envDatabaseDSN := os.Getenv("DATABASE_DSN")
+	envEnableHTTPS := os.Getenv("ENABLE_HTTPS") == "true"
+
+	serverRunAddress := cmp.Or(envServerAddress, configServerAddress, flagServerRunAddress, defaultServerAddress)
+	serverShortenerAddress := cmp.Or(envBaseURL, configBaseURL, flagServerShortenerAddress, defaultBaseURL)
+	defaultFilePath := cmp.Or(envFilePath, configFileStoragePath, flagDefaultFilePath)
+	defaultDatabaseDSN := cmp.Or(envDatabaseDSN, configDatabaseDSN, flagDefaultDatabaseDSN)
+	enableHTTPS := cmp.Or(envEnableHTTPS, configEnableHTTPS, flagEnableHTTPS)
+
+	if enableHTTPS && (serverRunAddress == defaultServerAddress) {
+		serverRunAddress = httpsServerAddress
 	}
 
-	if envServerRunAddress := os.Getenv("SERVER_ADDRESS"); envServerRunAddress != "" {
-		flagServerRunAddress = envServerRunAddress
+	return Flags{
+		FlagServerRunAddress:       serverRunAddress,
+		FlagServerShortenerAddress: serverShortenerAddress,
+		FlagDefaultFilePath:        defaultFilePath,
+		FlagDefaultDatabaseDSN:     defaultDatabaseDSN,
+		FlagEnableHTTPS:            enableHTTPS,
+		FlagConfigFile:             configPath,
 	}
-
-	if envServerShortenerAddress := os.Getenv("BASE_URL"); envServerShortenerAddress != "" {
-		flagServerShortenerAddress = envServerShortenerAddress
-	}
-
-	if envDefaultFilePath := os.Getenv("FILE_STORAGE_PATH"); envDefaultFilePath != "" {
-		flagDefaultFilePath = envDefaultFilePath
-	}
-
-	if envDefaultDatabaseDSN := os.Getenv("DATABASE_DSN"); envDefaultDatabaseDSN != "" {
-		flagDefaultDatabaseDSN = envDefaultDatabaseDSN
-	}
-
-	if os.Getenv("ENABLE_HTTPS") == "true" {
-		flagEnableHTTPS = true
-	}
-
-	return Flags{flagServerRunAddress, flagServerShortenerAddress, flagDefaultFilePath, flagDefaultDatabaseDSN, flagEnableHTTPS, flagConfigFile}
 }
