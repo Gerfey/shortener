@@ -133,6 +133,14 @@ func (h *URLHandler) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 
 // RedirectURLHandler обрабатывает запросы для перенаправления по сокращенному URL
 func (h *URLHandler) RedirectURLHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r.Body != nil {
+			if err := r.Body.Close(); err != nil {
+				fmt.Printf("error closing request body: %v\n", err)
+			}
+		}
+	}()
+
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -317,6 +325,13 @@ func (h *URLHandler) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bodySaveURL, _ := io.ReadAll(r.Body)
+	defer func() {
+		if r.Body != nil {
+			if err := r.Body.Close(); err != nil {
+				fmt.Printf("error closing request body: %v\n", err)
+			}
+		}
+	}()
 
 	cookie, err := r.Cookie(UserIDCookieName)
 	if err != nil {

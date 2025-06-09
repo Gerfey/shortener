@@ -74,4 +74,5 @@ func TestParseFlags_WithEnv(t *testing.T) {
 	assert.Equal(t, "http://example.com", flags.FlagServerShortenerAddress)
 	assert.Equal(t, "data.json", flags.FlagDefaultFilePath)
 	assert.Equal(t, "postgresql://example:example@localhost:5432/example", flags.FlagDefaultDatabaseDSN)
+	assert.False(t, flags.FlagEnableHTTPS)
 }
