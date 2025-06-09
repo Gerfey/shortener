@@ -209,7 +209,10 @@ func (h *URLHandler) ShortenJSONHandler(w http.ResponseWriter, r *http.Request) 
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Ошибка кодирования JSON", http.StatusInternalServerError)
+		return
+	}
 }
 
 // ShortenBatchHandler обрабатывает запросы для пакетного сокращения URL
