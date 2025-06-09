@@ -10,6 +10,7 @@ type ServerSettings struct {
 	DefaultDatabaseDSN     string
 	ShutdownTimeout        time.Duration
 	EnableHTTPS            bool
+	TrustedSubnet          string
 }
 
 // Settings объединяет все настройки приложения
@@ -27,6 +28,7 @@ func NewSettings(serverSettings ServerSettings) *Settings {
 			DefaultDatabaseDSN:     serverSettings.DefaultDatabaseDSN,
 			ShutdownTimeout:        serverSettings.ShutdownTimeout,
 			EnableHTTPS:            serverSettings.EnableHTTPS,
+			TrustedSubnet:          serverSettings.TrustedSubnet,
 		},
 	}
 }
@@ -44,4 +46,9 @@ func (c *Settings) ShortenerServerAddress() string {
 // ShutdownTimeout возвращает таймаут для корректного завершения работы сервера
 func (c *Settings) ShutdownTimeout() time.Duration {
 	return c.Server.ShutdownTimeout
+}
+
+// TrustedSubnet возвращает доверенную подсеть для доступа к статистике
+func (c *Settings) TrustedSubnet() string {
+	return c.Server.TrustedSubnet
 }

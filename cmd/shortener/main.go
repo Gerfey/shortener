@@ -48,6 +48,7 @@ func main() {
 			DefaultFilePath:        flags.FlagDefaultFilePath,
 			DefaultDatabaseDSN:     flags.FlagDefaultDatabaseDSN,
 			EnableHTTPS:            flags.FlagEnableHTTPS,
+			TrustedSubnet:          flags.FlagTrustedSubnet,
 		})
 
 	var storageStrategy models.StorageStrategy

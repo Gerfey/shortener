@@ -71,6 +71,7 @@ func (a *ShortenerApp) configureRouter() {
 		r.Post("/api/shorten/batch", middleware.AuthMiddleware(a.handler.ShortenBatchHandler))
 		r.Get("/api/user/urls", middleware.AuthMiddleware(a.handler.GetUserURLsHandler))
 		r.Delete("/api/user/urls", middleware.AuthMiddleware(a.handler.DeleteUserURLsHandler))
+		r.Get("/api/internal/stats", a.handler.StatsHandler)
 		r.Get("/ping", a.handler.PingHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
 	})
