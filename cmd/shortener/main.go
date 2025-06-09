@@ -68,11 +68,8 @@ func main() {
 		application.Run()
 	}()
 
-	select {
-	case <-testDoneCh:
-		if testMode {
-			logrus.Info("Завершение в тестовом режиме")
-			return
-		}
+	<-testDoneCh
+	if testMode {
+		logrus.Info("Завершение в тестовом режиме")
 	}
 }
