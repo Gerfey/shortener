@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/Gerfey/shortener/internal/app/settings"
 	"github.com/Gerfey/shortener/internal/app/strategy"
 	"github.com/Gerfey/shortener/internal/models"
 	"github.com/Gerfey/shortener/internal/pkg/app"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 var (
@@ -63,16 +64,11 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	appDone := make(chan struct{})
-
 	go func() {
 		application.Run()
-		appDone <- struct{}{}
 	}()
 
 	select {
-	case <-appDone:
-		logrus.Info("Приложение завершило работу")
 	case <-testDoneCh:
 		if testMode {
 			logrus.Info("Завершение в тестовом режиме")
