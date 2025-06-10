@@ -4,6 +4,10 @@ coverage:
       default:
         target: 55%
         threshold: 1%
+    patch:
+      default:
+        target: 55%
+        threshold: 1%
 
 ignore:
   - "internal/mock"
