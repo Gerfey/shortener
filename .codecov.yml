@@ -13,3 +13,4 @@ ignore:
   - "internal/mock"
   - "**/*_test.go"
   - "cmd/staticlint"
+  - "proto"

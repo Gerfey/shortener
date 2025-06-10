@@ -175,7 +175,7 @@ func TestMain(t *testing.T) {
 			args: []string{"shortener"},
 			envVars: map[string]string{
 				"SERVER_ADDRESS":    ":0",
-				"BASE_URL":          "http://localhost:9090",
+				"BASE_URL":          "http://localhost",
 				"FILE_STORAGE_PATH": "",
 				"DATABASE_DSN":      "",
 			},

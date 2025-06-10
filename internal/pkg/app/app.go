@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Gerfey/shortener/internal/app/grpc"
 	"github.com/Gerfey/shortener/internal/app/handler"
 	"github.com/Gerfey/shortener/internal/app/middleware"
 	"github.com/Gerfey/shortener/internal/app/service"
@@ -20,12 +21,14 @@ import (
 
 // ShortenerApp основной класс приложения
 type ShortenerApp struct {
-	settings   *settings.Settings
-	router     *chi.Mux
-	handler    *handler.URLHandler
-	server     *http.Server
-	strategy   models.StorageStrategy
-	repository models.Repository
+	settings         *settings.Settings
+	router           *chi.Mux
+	handler          *handler.URLHandler
+	server           *http.Server
+	strategy         models.StorageStrategy
+	repository       models.Repository
+	shortenerService *service.ShortenerService
+	urlService       *service.URLService
 }
 
 // NewShortenerApp создает новое приложение
@@ -42,18 +45,20 @@ func NewShortenerApp(settings *settings.Settings, strategy models.StorageStrateg
 
 	shortenerService := service.NewShortenerService(repository)
 	urlService := service.NewURLService(settings)
-	urlHandler := handler.NewURLHandler(shortenerService, urlService, settings, repository)
+	urlHandler := handler.NewURLHandler(shortenerService, settings, repository)
 
 	router := chi.NewRouter()
 	router.Use(middleware.LoggingMiddleware)
 	router.Use(middleware.GzipMiddleware)
 
 	application := &ShortenerApp{
-		settings:   settings,
-		router:     router,
-		handler:    urlHandler,
-		strategy:   strategy,
-		repository: repository,
+		settings:         settings,
+		router:           router,
+		handler:          urlHandler,
+		strategy:         strategy,
+		repository:       repository,
+		shortenerService: shortenerService,
+		urlService:       urlService,
 		server: &http.Server{
 			Addr:    settings.ServerAddress(),
 			Handler: router,
@@ -71,6 +76,7 @@ func (a *ShortenerApp) configureRouter() {
 		r.Post("/api/shorten/batch", middleware.AuthMiddleware(a.handler.ShortenBatchHandler))
 		r.Get("/api/user/urls", middleware.AuthMiddleware(a.handler.GetUserURLsHandler))
 		r.Delete("/api/user/urls", middleware.AuthMiddleware(a.handler.DeleteUserURLsHandler))
+		r.Get("/api/internal/stats", a.handler.StatsHandler)
 		r.Get("/ping", a.handler.PingHandler)
 		r.Get("/{id}", a.handler.RedirectURLHandler)
 	})
@@ -84,6 +90,13 @@ func (a *ShortenerApp) Run() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		err := grpc.RunGRPCServer(a.settings, a.shortenerService, a.urlService, a.repository)
+		if err != nil {
+			logrus.Errorf("Ошибка запуска gRPC сервера: %v", err)
+		}
+	}()
 
 	go func() {
 		var err error

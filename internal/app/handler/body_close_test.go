@@ -39,8 +39,7 @@ func TestBodyCloseError(t *testing.T) {
 		ServerRunAddress:       "localhost:8080",
 		ServerShortenerAddress: "http://localhost:8080",
 	})
-	urlService := service.NewURLService(appSettings)
-	handler := NewURLHandler(shortener, urlService, appSettings, mockRepo)
+	handler := NewURLHandler(shortener, appSettings, mockRepo)
 
 	t.Run("ShortenJSONHandler Close Error", func(t *testing.T) {
 		body := strings.NewReader(`{"url": "https://example.com"}`)
